@@ -193,9 +193,24 @@
       ? `生气触发时播放导入配音：${d.meta.voiceName}`
       : '生气触发时使用合成音效；可导入自己的配音';
     els.btnClearVoice.hidden = !d.meta.voiceName;
-    // 作者信息始终隐藏，不渲染主进程可能携带的名字、头像或链接。
-    $('#aboutRow').hidden = true;
-    $('#aboutText').textContent = '';
+    // 作者信息 + 为爱发电（底部「支持」一行， AUTHOR.show 控制是否显示）
+    const about = $('#aboutText');
+    const au = d.meta.author;
+    if (au) {
+      about.replaceChildren(`作者：${au.name}`);
+      if (au.douyinId) about.append(`（抖音 @${au.douyinId}）`);
+      for (const [label, key] of [['GitHub', 'github'], ['Gitee', 'gitee'], ['抖音主页', 'douyin']]) {
+        if (!au[key]) continue;
+        const b = document.createElement('button');
+        b.className = 'link';
+        b.textContent = label;
+        b.title = au[key];
+        b.addEventListener('click', () => api.openUrl(au[key]));
+        about.append(' ', b);
+      }
+    } else {
+      about.replaceChildren('');
+    }
     renderHook();
     renderPrivacy();
     renderStatus();
@@ -241,6 +256,11 @@
     toast('已复制 tccutil 重置命令：粘贴到「终端」回车执行，然后重启 Cyberpet 并重新勾选授权');
   });
   bind($('#btnCollapse'), 'click', () => api.collapse());
+  // 收款码点击放大：弹层里点任意处关闭
+  const zoom = $('#qrZoom');
+  bind($('#qrWechat'), 'click', () => { $('#qrZoomImg').src = $('#qrWechat img').getAttribute('src'); $('#qrZoomCap').textContent = '微信收款码'; zoom.hidden = false; });
+  bind($('#qrAlipay'), 'click', () => { $('#qrZoomImg').src = $('#qrAlipay img').getAttribute('src'); $('#qrZoomCap').textContent = '支付宝收款码'; zoom.hidden = false; });
+  bind(zoom, 'click', () => { zoom.hidden = true; });
   bind(document, 'keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'v') {
       e.preventDefault();

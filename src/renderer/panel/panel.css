@@ -41,13 +41,17 @@ main {
   padding: 0 16px 12px 18px; scrollbar-gutter: stable; overscroll-behavior: contain;
 }
 .banner {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; padding: 9px 12px;
-  border-radius: 10px; background: #fff7e0; border: 1px solid #ffe2a8; color: #7a4a00; font-size: 14.5px; line-height: 1.6;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 10px; padding: 10px 12px;
+  border-radius: 12px; background: #fff7e0; border: 1px solid #ffe2a8; color: #7a4a00; font-size: 14.5px; line-height: 1.6;
 }
 .banner > span { flex: 1 1 300px; min-width: 0; overflow-wrap: anywhere; }
 .banner-actions, .button-group { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 9px 0; border-top: 1px dashed #e2e7f1; }
-.lab { flex: none; width: 38px; font-size: 14.5px; color: #69738c; }
+/* 每个配置区一张浅色卡片，替代原来的虚线分隔，层次更清楚 */
+.row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 14px; margin-bottom: 8px;
+  border-radius: 14px; background: #f7f9fd; border: 1px solid #eef2f9;
+}
+.lab { flex: none; width: 38px; font-size: 14.5px; color: #69738c; font-weight: 600; }
 .pill {
   min-height: 33px; padding: 4px 11px; border-radius: 999px; border: 1px solid #e3e8f4; background: #fff; color: #39415a;
   font: inherit; line-height: 20px; cursor: pointer; box-shadow: 0 1px 2px rgba(20, 30, 60, .06); white-space: nowrap;
@@ -73,9 +77,12 @@ main {
 .chk.off, .sel select:disabled { opacity: .5; }
 .chk.off, .chk input:disabled, .sel select:disabled { cursor: not-allowed; }
 .help { font-size: 14px; color: #69738c; line-height: 1.65; overflow-wrap: anywhere; }
-.capabilities { list-style: none; color: #5b6480; font-size: 14px; }
+.capabilities { list-style: none; color: #5b6480; font-size: 14px; margin: 0; padding: 0 0 0 46px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 12px; }
 .capabilities li { overflow-wrap: anywhere; }
-.diagnostics { border-top: 1px dashed #e2e7f1; padding: 10px 0 2px; }
+.diagnostics {
+  padding: 8px 14px; margin-bottom: 8px; border-radius: 14px;
+  background: #f7f9fd; border: 1px solid #eef2f9;
+}
 .diagnostics summary { color: #39415a; cursor: pointer; padding: 2px 0; }
 .diagnostics dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 7px 10px; font-size: 14px; }
 .diagnostics dt { color: #69738c; }
@@ -87,6 +94,27 @@ footer { flex: 0 0 auto; padding: 8px 18px 10px; border-top: 1px solid #e8ecf5; 
   overflow-wrap: anywhere; opacity: 0; transition: opacity .2s; pointer-events: none;
 }
 #toast.show { opacity: 1; }
+/* ---------- 支持：作者信息 + 为爱发电收款码 ---------- */
+.support .full { padding-left: 0; }
+.qr-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.qr {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 12px;
+  border: 1px solid #e3e8f4; background: #fff; cursor: pointer; font: inherit; line-height: 1.2;
+  box-shadow: 0 1px 2px rgba(20, 30, 60, .06);
+}
+.qr img { width: 36px; height: 36px; object-fit: cover; border-radius: 8px; display: block; }
+.qr b { font-weight: 600; color: #39415a; font-size: 14px; }
+.qr:hover { border-color: #b9cdf7; background: #f5f8ff; }
+.qr:active { transform: translateY(1px); }
+.link { border: 0; background: none; color: #2f6fe0; cursor: pointer; font: inherit; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.link:hover { color: #1d4fb8; }
+#qrZoom { position: fixed; inset: 0; z-index: 20; background: rgba(15, 20, 35, .62); display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+#qrZoom figure {
+  margin: 0; background: #fff; border-radius: 18px; padding: 14px 14px 10px; text-align: center;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45); max-width: calc(100% - 48px);
+}
+#qrZoom img { display: block; max-width: min(420px, calc(100vw - 80px)); max-height: 56vh; border-radius: 8px; }
+#qrZoom figcaption { margin-top: 8px; font-size: 14.5px; color: #39415a; font-weight: 600; }
 :focus-visible { outline: 2px solid #2f6fe0; outline-offset: 2px; }
 @media (max-width: 560px) {
   header { gap: 6px; padding-left: 12px; }

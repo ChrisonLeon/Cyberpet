@@ -11,19 +11,39 @@
       --tail: #1b1a20; --tail-tip: #1b1a20; --tail-hi: #4d4c59;
     }
     #app { position: absolute; left: 0; top: 0; width: 1024px; height: 1024px; }
+    /* 暗黑桌面：深夜蓝黑渐变底，黑猫在暗色键盘上敲字 */
     #app .bg {
       position: absolute; inset: 0; border-radius: 228px;
-      background: linear-gradient(160deg, #79b4ff 0%, #3d7bf2 52%, #7a5cff 100%);
+      background: linear-gradient(165deg, #323a4f 0%, #1d2330 46%, #10131c 100%);
     }
     #app .glow {
-      position: absolute; left: 152px; top: 96px; width: 720px; height: 720px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 255, 255, .34) 0%, rgba(255, 255, 255, 0) 68%);
+      position: absolute; left: 132px; top: 60px; width: 760px; height: 760px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(91, 150, 255, .30) 0%, rgba(91, 150, 255, 0) 66%);
+    }
+    #app .sheen {
+      position: absolute; left: 60px; top: 40px; width: 520px; height: 300px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, 0) 70%);
     }
     #app .floor {
-      position: absolute; left: 232px; top: 846px; width: 560px; height: 96px; border-radius: 50%;
-      background: radial-gradient(ellipse, rgba(10, 20, 60, .38) 0%, rgba(10, 20, 60, 0) 70%);
+      position: absolute; left: 182px; top: 880px; width: 660px; height: 110px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, 0) 70%);
     }
-    #app .torso { position: absolute; left: 277px; top: 618px; width: 705px; height: 388px; }
+    #app .kb { position: absolute; left: 162px; top: 712px; width: 700px; height: 257px; }
+    #app .kb .sil { fill: #fff; stroke: #fff; stroke-width: 4; }
+    /* 暗夜键盘配色（与桌宠 dark 桌面一致，键帽微亮、功能键蓝） */
+    #app .kb .kb-case { fill: #0d1119; }
+    #app .kb .kb-plate { fill: #151a26; }
+    #app .kb .key .side { fill: #1c2231; }
+    #app .kb .key .cap { fill: #303950; }
+    #app .kb .key text { fill: #c9d4ea; }
+    #app .kb .key.accent .side { fill: #24406f; }
+    #app .kb .key.accent .cap { fill: #3d7bf2; }
+    #app .kb .key.accent text { fill: #fff; }
+    #app .kb .key.soft .side { fill: #2a3c66; }
+    #app .kb .key.soft .cap { fill: #3a5590; }
+    #app .kb .key.accent.kcap-lit .cap { fill: #ffd86b; transform: translateY(3.2px); }
+    #app .paws { position: absolute; inset: 0; }
+    #app .torso { position: absolute; left: 345px; top: 470px; width: 500px; height: 275px; }
     #app .string { fill: none; stroke: #f4f6fb; stroke-width: 2; stroke-linecap: round; }
     #app .aglet { fill: #cfd6e6; }
     #app .collar { fill: none; stroke: var(--collar); stroke-width: 9; stroke-linecap: round; }
@@ -31,7 +51,7 @@
     #app .bell-slit { fill: none; stroke: #b9800a; stroke-width: 1.6; stroke-linecap: round; }
     #app .paw-body { fill: var(--paw); stroke: var(--paw-line); stroke-width: 1.5; }
     #app .pad { fill: var(--pad); }
-    #app .head { position: absolute; left: 262px; top: 128px; width: 500px; height: 494px; }
+    #app .head { position: absolute; left: 332px; top: 150px; width: 360px; height: 356px; }
     /* 黑猫配色（与桌宠 black 身子一致） */
     #app .ear, #app .face { fill: #1b1a20; }
     #app .ear-in { fill: #6b4a5c; }
@@ -47,7 +67,7 @@
       filter: brightness(0) invert(1)
         drop-shadow(4px 0 0 #fff) drop-shadow(-4px 0 0 #fff) drop-shadow(0 4px 0 #fff) drop-shadow(0 -4px 0 #fff)
         drop-shadow(3px 3px 0 #fff) drop-shadow(-3px 3px 0 #fff) drop-shadow(3px -3px 0 #fff) drop-shadow(-3px -3px 0 #fff)
-        drop-shadow(0 12px 16px rgba(0, 0, 0, .32));
+        drop-shadow(0 12px 16px rgba(0, 0, 0, .42));
     }
     .art { position: absolute; left: 0; top: 0; overflow: hidden; }
     #view { position: absolute; left: 0; top: 0; }
@@ -64,19 +84,23 @@
     const EYE = (cx) => `M${cx - 1.5} 13.4 a1.5 1.9 0 1 0 3 0 a1.5 1.9 0 1 0 -3 0 Z`;
 
     function appIcon() {
-      // 纯黑猫：卡通头 + 带尾巴的身子 + 两只爪子（贴纸白边保留），不用真人头像
+      // 暗黑桌面 logo：黑猫在暗夜键盘上敲字（左 Shift 键帽亮起下压，像正按下去）
+      const tail = ART.tailPathD(10, 16);
       const torso = ART.torsoMarkup('black')
-        .replace('id="tailSil"', `id="tailSil" d="${ART.tailPathD(9, 14).d}"`)
-        .replace('id="tailColor"', `id="tailColor" d="${ART.tailPathD(9, 14).d}"`)
-        .replace('id="tailTipC"', `id="tailTipC" d="${ART.tailPathD(9, 14).dTip}"`);
+        .replace('id="tailSil"', `id="tailSil" d="${tail.d}"`)
+        .replace('id="tailColor"', `id="tailColor" d="${tail.d}"`)
+        .replace('id="tailTipC"', `id="tailTipC" d="${tail.dTip}"`);
       const paw = ART.pawMarkup('black');
       const head = ART.cartoonHeadMarkup();
+      const kb = ART.keyboardSvg(false)
+        .replace('<g class="key accent" data-k="shift">', '<g class="key accent kcap-lit" data-k="shift">');
       return `<div id="app">
-        <div class="bg"></div><div class="glow"></div><div class="floor"></div>
-        <svg class="torso" viewBox="0 0 240 132">
-          ${torso}
-          <g transform="translate(52 104)">${paw}</g>
-          <g transform="translate(96 104)">${paw}</g>
+        <div class="bg"></div><div class="glow"></div><div class="sheen"></div><div class="floor"></div>
+        <svg class="torso" viewBox="0 0 240 132">${torso}</svg>
+        <svg class="kb" viewBox="0 0 300 110">${kb}</svg>
+        <svg class="paws" viewBox="0 0 1024 1024">
+          <g transform="translate(455 878) scale(2.5)">${paw}</g>
+          <g transform="translate(583 878) scale(2.5)">${paw}</g>
         </svg>
         <div class="head"><svg viewBox="0 0 160 158" style="width:100%;height:100%">${head}</svg></div>
       </div>`;

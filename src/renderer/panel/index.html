@@ -10,8 +10,8 @@
   <div id="card">
     <header id="titlebar">
       <div class="titles">
-        <h1>桌宠控制面板</h1>
-        <p>四种小猫 · 可选自定义图片或视频头像</p>
+        <h1>CyberPet 控制面板</h1>
+        <p>黑猫桌宠 · 图片 / 动态头像 · 键鼠互动</p>
       </div>
       <div class="chips">
         <span id="hookChip" class="chip" hidden></span>
@@ -106,10 +106,23 @@
         </dl>
         <p class="help">加载失败、启动失败与系统权限是不同问题，请结合实际错误排查。安装或更新本身不代表已获授权；辅助功能开关显示已开但不生效，多半是旧版本留下的记录（ad-hoc 签名换版即失效），关掉再打开无效时可用「复制修复命令」清掉旧记录后重新勾选。</p>
       </details>
+
+      <section class="row support"><span class="lab">支持</span>
+        <div class="full">
+          <p class="note" id="aboutText"></p>
+          <div class="qr-line">
+            <span class="note">为爱发电 · 请作者喝杯奶茶：</span>
+            <button class="qr" id="qrWechat" title="点击放大微信收款码"><img src="../../../assets/donate/wechat.jpg" alt="微信收款码"><b>微信收款</b></button>
+            <button class="qr" id="qrAlipay" title="点击放大支付宝收款码"><img src="../../../assets/donate/alipay.jpg" alt="支付宝收款码"><b>支付宝收款</b></button>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <footer id="aboutRow" hidden><span id="aboutText"></span></footer>
     <footer>敲键盘与移动鼠标可互动；点脑袋触发生气，是否显示台词由独立按钮决定。锁定头像后可滑动摸头；拖动身子或键盘可挪位置。</footer>
+  </div>
+  <div id="qrZoom" hidden role="dialog" aria-modal="true">
+    <figure><img id="qrZoomImg" alt=""><figcaption id="qrZoomCap"></figcaption></figure>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="../../shared/voice-rules.js"></script>

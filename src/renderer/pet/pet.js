@@ -829,7 +829,7 @@
     const out = hand === 'L' ? -1 : 1;
     let nx = -dy / len, ny = dx / len; // 与肩→爪连线垂直的两个方向，取 x 分量朝外的那一个
     if (nx * out < 0 || (nx === 0 && ny * out < 0)) { nx = -nx; ny = -ny; }
-    const bend = 58 * reach; // 二次曲线的视觉弓高约是控制点偏移的一半，58 约能看到 29px 的肘弯
+    const bend = 46 * reach; // 二次曲线的视觉弓高约是控制点偏移的一半，46 约能看到 23px 的肘弯
     const mx = (from[0] + x) / 2 + nx * bend;
     const my = (from[1] + y) / 2 + 12 * (1 - reach) + ny * bend;
     arm.setAttribute('d', `M${from[0]} ${from[1]} Q${mx.toFixed(1)} ${my.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`);

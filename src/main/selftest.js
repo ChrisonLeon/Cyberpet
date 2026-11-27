@@ -501,7 +501,9 @@ async function runSelfTest(ctx) {
       + " headBtns: document.querySelectorAll('#btnPickHead, #btnResetHead').length,"
       + " videoBtnGone: !document.getElementById('btnPickHeadVideo'), easterGone: !document.querySelector('[data-key=\"voiceEaster\"]'),"
       + " sfxOn: !!document.querySelector('[data-key=\"sfxOn\"]'), soundDisabled: document.getElementById('switchSound').disabled, head: document.getElementById('headName').textContent,"
-      + " about: document.getElementById('aboutText').textContent })"));
+      + " title: document.querySelector('h1').textContent,"
+      + " about: document.getElementById('aboutText').textContent,"
+      + " qrs: [!!document.getElementById('qrWechat'), !!document.getElementById('qrAlipay'), !!document.getElementById('qrZoom')] })"));
     summary.panel = a;
     check(a.dirs === 0, '素材目录配置应当已经去掉');
     check((await js(panel, "document.querySelectorAll('[data-body]').length")) === 4, '应当有 4 种身子（人偶身已删除）');
@@ -514,8 +516,21 @@ async function runSelfTest(ctx) {
     check(a.headBtns === 2, '头像行应当只剩 选图片/还原默认头像 两个按钮');
     check(a.soundDisabled === false, '键盘音效开着时轴体应当可选');
     check(a.head.includes('当前：'), '没有显示当前头像');
-    const aboutHidden = await js(panel, "document.getElementById('aboutRow').hidden");
-    check(aboutHidden === true, '作者信息当前应当隐藏（AUTHOR.show=false）');
+    check(a.title.includes('CyberPet'), `面板标题应当包含软件名（${a.title}）`);
+    check(a.about.includes('作者：'), `应当显示作者信息（${a.about}）`);
+    check(a.qrs.every(Boolean), '应当有微信/支付宝收款码和放大弹层');
+    // 收款码图片要真的加载出来（打包后从 asar 里读）
+    for (const id of ['qrWechat', 'qrAlipay']) {
+      await sleep(200);
+      check(await js(panel, `(() => { const i = document.querySelector('#${id} img'); return i.complete && i.naturalWidth > 0; })()`) === true, `${id} 收款码图片没有加载出来`);
+    }
+    // 点击缩略图弹出放大层，点弹层任意处关闭
+    await js(panel, "document.getElementById('qrWechat').click(); 1");
+    await sleep(120);
+    check(await js(panel, "(() => { const z = document.getElementById('qrZoom'); return !z.hidden && !!document.getElementById('qrZoomImg').getAttribute('src'); })()") === true, '点击收款码应当弹出放大层');
+    await js(panel, "document.getElementById('qrZoom').click(); 1");
+    await sleep(120);
+    check(await js(panel, "document.getElementById('qrZoom').hidden") === true, '点击弹层应当关闭放大层');
     await setSettings({ keySfx: false });
     await sleep(200);
     check((await js(panel, "document.getElementById('switchSound').disabled")) === true, '键盘音效关闭时轴体应当置灰');

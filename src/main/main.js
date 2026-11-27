@@ -21,16 +21,16 @@ const PLATFORM = SELFTEST_DIR && process.env.BXC_PET_PLATFORM ? process.env.BXC_
 
 const APP_TITLE = 'Cyberpet';
 const PET_SIZE = { width: 394, height: 430 };
-const PANEL_SIZE = { width: 720, height: 990 }; // 高度按内容实测校准（selftest「面板布局」日志），默认视图一屏放下、无滚动条
-const BANNER_H = 105; // 授权横幅出现时窗口扩高的量（横幅高度 + 上下边距）
+const PANEL_SIZE = { width: 840, height: 1060 }; // 宽高按内容实测校准（selftest「面板布局」日志），默认视图一屏放下、无滚动条
+const BANNER_H = 82; // 授权横幅出现时窗口扩高的量（横幅高度 + 上下边距）
 const ACTIONS = new Set(['type-demo', 'frenzy', 'mouse-demo', 'pat', 'angry']);
 const HEAD_VIDEO_EXTS = new Set(['mp4', 'webm', 'mov', 'm4v']);
 const IMAGE_PICK_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
 const AUDIO_PICK_EXTS = ['mp3', 'wav', 'm4a', 'aac', 'ogg'];
 
-// 作者信息：把 show 改成 true 就会在面板底部和「使用说明」里显示
+// 作者信息：显示在控制面板底部「支持」一行
 const AUTHOR = {
-  show: false, // 暂时隐藏；要显示就改成 true
+  show: true,
   name: '凉拌卡皮巴拉',
   douyin: 'https://v.douyin.com/sAG1aUn2fRE/', // 抖音主页（短链接）
   douyinId: 'Chrison_Leon',

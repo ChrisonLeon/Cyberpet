@@ -207,6 +207,16 @@ const AUTHOR = {
   图片版权归原作者及俱乐部所有，仅作粉丝交流，如需下架请联系。
 - 代码仅供个人学习交流。
 
+## 支持作者
+
+如果 Cyberpet 给你带来了快乐，欢迎「为爱发电」请作者（凉拌卡皮巴拉，抖音 @Chrison_Leon）喝杯奶茶；
+控制面板底部「支持」一行可随时找到收款码（点击放大）。
+
+<p>
+  <img src="assets/donate/wechat.jpg" width="200" alt="微信收款码">
+  <img src="assets/donate/alipay.jpg" width="200" alt="支付宝收款码">
+</p>
+
 ## 已知限制
 
 - Windows 版未真机验证（CI 只覆盖代码级 + 平台模拟）；自动隐私保护的 Windows 探测器源码已交付（`native/windows/privacy-probe.cpp`），**尚未在 Windows 环境编译**——编译前开启该功能会保守遮蔽并提示。
