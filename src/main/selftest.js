@@ -505,6 +505,11 @@ async function runSelfTest(ctx) {
       + " sfxOn: !!document.querySelector('[data-key=\"sfxOn\"]'), soundDisabled: document.getElementById('switchSound').disabled, head: document.getElementById('headName').textContent,"
       + " title: document.querySelector('h1').textContent,"
       + " about: document.getElementById('aboutText').textContent,"
+      + " diagAfterSupport: (() => { const kids = [...document.querySelectorAll('main > *')];"
+      + " const iS = kids.findIndex((n) => n.classList.contains('support')); const iD = kids.findIndex((n) => n.id === 'diagnostics');"
+      + " return iS >= 0 && iD > iS; })(),"
+      + " updVersion: document.getElementById('updVersion').textContent,"
+      + " updBtns: [!!document.getElementById('btnCheckUpdate'), !!document.getElementById('btnDoUpdate'), !!document.getElementById('btnOpenRelease')].every(Boolean),"
       + " privacyMoreOff: (document.getElementById('privacyMore').classList.contains('off') && !document.getElementById('privacyMore').open) })"));
     summary.panel = a;
     check(a.dirs === 0, '素材目录配置应当已经去掉');
@@ -523,6 +528,9 @@ async function runSelfTest(ctx) {
     const qrs = await js(panel, "[!!document.getElementById('qrWechat'), !!document.getElementById('qrAlipay'), !!document.getElementById('qrZoom')].every(Boolean)");
     check(qrs === true, '应当有微信/支付宝收款码和放大弹层');
     check(a.privacyMoreOff === true, '隐私关闭时说明应当折叠且不可展开');
+    check(a.diagAfterSupport === true, '「安装与授权诊断」应当排在「支持」后面');
+    check(a.updVersion.includes(`v${app.getVersion()}`), `应当显示当前版本（${a.updVersion}）`);
+    check(a.updBtns === true, '应当有检查更新/下载并更新/打开下载页按钮');
     // 收款码图片要真的加载出来（打包后从 asar 里读）
     for (const id of ['qrWechat', 'qrAlipay']) {
       await sleep(200);

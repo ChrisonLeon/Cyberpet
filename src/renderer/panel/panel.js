@@ -14,6 +14,8 @@
     switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
     privacyStatus: $('#privacyStatus'), privacyReason: $('#privacyReason'), privacyCapabilities: $('#privacyCapabilities'),
     toast: $('#toast'),
+    updVersion: $('#updVersion'), btnCheckUpdate: $('#btnCheckUpdate'), updStatus: $('#updStatus'),
+    updGo: $('#updGo'), updNotes: $('#updNotes'), btnDoUpdate: $('#btnDoUpdate'), btnOpenRelease: $('#btnOpenRelease'),
   };
   const state = { data: null, privacy: null, mode: '启动中', fps: 0, statusAt: 0 };
 
@@ -220,10 +222,65 @@
     } else {
       about.replaceChildren('');
     }
+    els.updVersion.textContent = `当前版本：v${d.meta.version || 'unknown'}`;
     renderHook();
     renderPrivacy();
     renderStatus();
   }
+
+  // ---------- 手动更新 ----------
+  let updating = false;
+  async function checkUpdate() {
+    if (updating) return;
+    els.updStatus.textContent = '正在检查…';
+    els.updGo.hidden = true;
+    let r;
+    try { r = await api.updateCheck(); } catch (err) { r = { error: errorText(err) }; }
+    if (r && r.error) { els.updStatus.textContent = `检查失败：${errorText(r.error)}`; return; }
+    if (!r || !r.latest) { els.updStatus.textContent = '检查失败：更新源返回为空'; return; }
+    if (!r.hasUpdate) { els.updStatus.textContent = `已是最新（v${r.latest}）`; return; }
+    els.updStatus.textContent = '';
+    els.updNotes.textContent = `发现新版本 v${r.latest}${r.notes ? `：${r.notes}` : ''}`;
+    els.btnDoUpdate.hidden = !r.installable;
+    els.btnOpenRelease.hidden = !!r.installable;
+    els.updGo.hidden = false;
+  }
+
+  async function downloadUpdate() {
+    if (updating || els.btnDoUpdate.hidden) return;
+    updating = true;
+    els.btnDoUpdate.disabled = true;
+    els.updStatus.textContent = '准备下载…';
+    // 从检查结果里带版本和直链；重取一次避免面板缓存过期清单
+    const r = await run(() => api.updateCheck());
+    if (!r || r.error || !r.hasUpdate) {
+      updating = false;
+      els.btnDoUpdate.disabled = false;
+      els.updStatus.textContent = r && r.error ? `检查失败：${errorText(r.error)}` : '没有可用的新版本';
+      return;
+    }
+    const dl = await run(() => api.updateDownload({ version: r.latest, urls: r.urls }));
+    if (!dl || dl.ok === false) {
+      updating = false;
+      els.btnDoUpdate.disabled = false;
+      return; // 失败原因已通过 update:done / toast 提示
+    }
+    els.updStatus.textContent = '下载完成，正在安装…';
+    const ins = await run(() => api.updateInstall());
+    updating = false;
+    els.btnDoUpdate.disabled = false;
+    if (ins && ins.ok === false) els.updStatus.textContent = `安装失败：${errorText(ins.error)}`;
+  }
+
+  api.onUpdateProgress?.((p) => { if (p && typeof p.pct === 'number') els.updStatus.textContent = `下载中 ${p.pct}%`; });
+  api.onUpdateDone?.((r) => {
+    if (!r) return;
+    if (r.ok === false) {
+      updating = false;
+      els.btnDoUpdate.disabled = false;
+      els.updStatus.textContent = `下载失败：${errorText(r.error)}`;
+    }
+  });
 
   async function applyResult(request, okText) {
     const payload = await request();
@@ -270,6 +327,9 @@
   bind($('#qrWechat'), 'click', () => { $('#qrZoomImg').src = $('#qrWechat img').getAttribute('src'); $('#qrZoomCap').textContent = '微信收款码'; zoom.hidden = false; });
   bind($('#qrAlipay'), 'click', () => { $('#qrZoomImg').src = $('#qrAlipay img').getAttribute('src'); $('#qrZoomCap').textContent = '支付宝收款码'; zoom.hidden = false; });
   bind(zoom, 'click', () => { zoom.hidden = true; });
+  bind(els.btnCheckUpdate, 'click', () => checkUpdate());
+  bind(els.btnDoUpdate, 'click', () => downloadUpdate());
+  bind(els.btnOpenRelease, 'click', () => api.updateOpenPage());
   bind(document, 'keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'v') {
       e.preventDefault();

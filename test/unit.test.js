@@ -54,6 +54,46 @@ test('配音来源：导入配音优先，没有就用合成音效', () => {
   assert.deepEqual(VOICE.resolve({ hasVoice: false }), { easterEnabled: false, source: 'synth' });
 });
 
+// ---------- 手动更新：版本比较与更新清单解析 ----------
+const UPDATER = require('../src/main/updater');
+
+test('版本比较按数字逐段比较，v 前缀忽略', () => {
+  assert.equal(UPDATER.compareVersions('2.4.1', '2.4.1'), 0);
+  assert.equal(UPDATER.compareVersions('2.5.0', '2.4.1'), 1);
+  assert.equal(UPDATER.compareVersions('2.4.1', '2.10.0'), -1);
+  assert.equal(UPDATER.compareVersions('2.10.0', '2.9.9'), 1);
+  assert.equal(UPDATER.compareVersions('v3.0.0', '2.99.99'), 1);
+});
+
+test('更新清单解析只放行合法版本与白名单域名', () => {
+  const ok = UPDATER.parseManifest({
+    version: '2.5.0', notes: 'x'.repeat(400),
+    urls: {
+      'darwin-arm64': ['https://github.com/a/b.zip', 'http://evil.com/x.zip', 'https://evil.xyz/y.zip'],
+      'win32-x64': 'https://gitee.com/a/b.exe',
+      'unknown-platform': ['https://github.com/a/c.zip'],
+    },
+  });
+  assert.equal(ok.version, '2.5.0');
+  assert.equal(ok.notes.length, 300);
+  assert.deepEqual(ok.urls['darwin-arm64'], ['https://github.com/a/b.zip']);
+  assert.deepEqual(ok.urls['win32-x64'], ['https://gitee.com/a/b.exe']);
+  assert.equal(ok.urls['unknown-platform'], undefined);
+  assert.deepEqual(UPDATER.pickUrls(ok.urls, 'darwin-arm64'), ['https://github.com/a/b.zip']);
+  assert.deepEqual(UPDATER.pickUrls(ok.urls, 'darwin-x64'), []);
+  for (const bad of [null, 'junk', {}, { version: 'abc', urls: {} }, { version: '2.5.0', urls: {} }, { version: '2.5.0', urls: { 'darwin-arm64': ['ftp://x'] } }]) {
+    assert.equal(UPDATER.parseManifest(bad), null, JSON.stringify(bad));
+  }
+});
+
+test('mac 安装脚本包含退出/替换/重启步骤且路径已转义', () => {
+  const s = UPDATER.macInstallScript({ zipPath: '/tmp/a.zip', extractDir: "/tmp/x'y", appPath: '/Applications/Cyberpet.app' });
+  for (const part of ['pkill -x Cyberpet', "rm -rf '/Applications/Cyberpet.app'", 'ditto ', "open '/Applications/Cyberpet.app'"]) {
+    assert.ok(s.includes(part), `缺少 ${part}`);
+  }
+  assert.ok(!s.includes("'/tmp/x'y"), '单引号路径必须转义');
+});
+
 // ---------- 设置校验：渲染进程传什么都不会把配置写坏 ----------
 test('设置的默认值完整，非法输入全部丢弃', () => {
   assert.equal(DEFAULTS.desk, 'bluewhite'); // 默认蓝白桌面

@@ -1,6 +1,6 @@
 'use strict';
 const {
-  app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell, dialog, clipboard, systemPreferences,
+  app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell, dialog, clipboard, systemPreferences, net,
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -11,6 +11,7 @@ const { InputHook } = require('./hooks');
 const { PrivacyController } = require('./privacy-controller');
 const { labelFor } = require('../shared/keys');
 const { importFile } = require('./importer');
+const { initUpdater } = require('./updater');
 
 // 真实的操作系统：决定窗口类型、授权弹窗这些必须按真实平台来的事
 const REAL_PLATFORM = process.platform;
@@ -62,6 +63,7 @@ let petStatus = { fps: 0, mode: '启动中' };
 let assetsDir = '';
 let rendererDir = '';
 let userDataDir = '';
+let updater = null;
 
 // 单实例锁以 productName 命名：开发 / 冒烟若与打包版共用「Cyberpet」，打包版运行时这里会静默退出。
 // 在申请锁之前就把 userData 分开：打包版 = Cyberpet，开发 = Cyberpet-dev，冒烟 = 独立测试目录。
@@ -604,6 +606,14 @@ function registerIpc() {
   ipcMain.handle('permission:copyFix', (e) => {
     if (isFromPanel(e) && IS_MAC) clipboard.writeText('tccutil reset Accessibility top.baixiaochun.pet');
   });
+  // ---------- 手动更新：检查 / 下载 / 安装 / 打开下载页 ----------
+  ipcMain.handle('update:check', (e) => (isFromPanel(e) ? updater.check().catch((err) => ({ error: String(err.message || err) })) : null));
+  ipcMain.handle('update:download', (e, payload) => {
+    if (!isFromPanel(e) || !payload || typeof payload.version !== 'string' || !Array.isArray(payload.urls)) return null;
+    return updater.startDownload(payload.version, payload.urls.map(String).filter((u) => /^https:\/\//.test(u))).catch((err) => ({ ok: false, error: String(err.message || err) }));
+  });
+  ipcMain.handle('update:install', (e) => (isFromPanel(e) ? updater.install().catch((err) => ({ ok: false, error: String(err.message || err) })) : null));
+  ipcMain.handle('update:openPage', () => updater.openPage());
   ipcMain.handle('open:url', (e, url) => {
     // 只允许打开作者信息里登记过的 https 链接
     if (isFromPanel(e) && typeof url === 'string' && Object.values(AUTHOR).includes(url) && /^https:\/\//.test(url)) {
@@ -653,6 +663,14 @@ async function boot() {
   hook = new InputHook();
   hook.on('event', onInputEvent);
   hook.on('state', () => broadcast('settings', payload()));
+
+  // 手动更新：下载进度/完成事件广播给面板
+  updater = initUpdater({
+    net, app, shell, broadcast, platform: REAL_PLATFORM, arch: process.arch, isPackaged: app.isPackaged,
+    macInstalled: IS_MAC && typeof app.isInApplicationsFolder === 'function' ? app.isInApplicationsFolder() : false,
+    winPortable: !!process.env.PORTABLE_EXECUTABLE_DIR,
+    appVersion: app.getVersion(),
+  });
 
   // 自动隐私保护：探测结论驱动「遮蔽/隐藏 + 停输入映射」，恢复时按用户显隐设置还原
   privacyCtl = new PrivacyController();

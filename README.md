@@ -217,6 +217,19 @@ const AUTHOR = {
   <img src="assets/donate/alipay.jpg" width="200" alt="支付宝收款码">
 </p>
 
+## 发布新版（手动更新源）
+
+客户端「支持 → 检查更新」读取仓库根目录的 `latest.json`（优先 Gitee raw，GitHub raw 兜底）。发布流程：
+
+1. `package.json` 升版本 → `npm run dist:mac` / `npm run dist:win`（记得带 npmmirror 环境变量）
+2. 在 GitHub Releases 上传 `dist/` 里的 zip（mac）与 setup.exe/portable（win），Release 标签格式 `v2.5.0`
+3. 更新仓库根目录 `latest.json`（version / notes / urls 指向新资产），提交并推送 GitHub
+4. Gitee 镜像同步后，已装客户端「检查更新」即可发现新版
+5. 若在 Gitee 也发布了 Release 并上传资产，可把 Gitee 直链加到对应 `urls` 数组最前面，国内下载更快
+
+macOS：下载 zip → 解压校验 → 退出应用 → 自动替换 → 自动重启；Windows：下载 setup.exe → 静默安装。
+设置、头像、配音存放在用户目录，两种方式都自动保留。便携版与未装进「应用程序」的 mac 只提供「打开下载页」手动更新。
+
 ## 已知限制
 
 - Windows 版未真机验证（CI 只覆盖代码级 + 平台模拟）；自动隐私保护的 Windows 探测器源码已交付（`native/windows/privacy-probe.cpp`），**尚未在 Windows 环境编译**——编译前开启该功能会保守遮蔽并提示。
