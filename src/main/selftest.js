@@ -94,6 +94,10 @@ async function runSelfTest(ctx) {
       + " pad: getComputedStyle(document.getElementById('pad')).display, kb: getComputedStyle(document.getElementById('kb')).display })"));
     summary.layout = l;
     check(l.w === 394 && l.h === 430, `窗口尺寸 ${l.w}x${l.h}`);
+    summary.tail = await js(pet, "(() => { const t = document.getElementById('tailColor');"
+      + " return JSON.stringify({ dLive: (t ? t.getAttribute('d') : 'null').slice(0, 120),"
+      + " dFresh: window.BXC_ART.tailPathD(0, 0).d.slice(0, 120),"
+      + " rest: JSON.stringify(window.BXC_ART.TAIL_REST || 'none') }); })()");
     check(l.desk === 'transparent' && l.pad === 'none' && l.kb === 'block', '默认应当是透明桌面（只有键盘和鼠标）');
     await shot('01-panel', panel);
     await js(pet, "document.documentElement.style.background = 'linear-gradient(135deg, #d5e0f2, #8ea3c6)'; 1"); // 后续截图垫一层底色
@@ -358,14 +362,16 @@ async function runSelfTest(ctx) {
     await sleep(1500);
   });
 
-  await step('voice-imported-when-easter-off', async () => {
-    if (!hasFixtures) throw new SkipError(); // 取消原声彩蛋 → 播导入的配音，视频静音
+  await step('voice-easter-off-rage', async () => { // 视频头像 + 取消彩蛋 + 有导入配音：沉默暴躁（不播音、不显示台词）
+    if (!hasFixtures) throw new SkipError();
     await setSettings({ voiceEaster: false });
     await sleep(200);
+    await js(pet, "document.getElementById('speech').classList.remove('show'); 1");
     trigger();
     await sleep(300);
     const s = await voiceState();
-    check(s.videoMuted === true && played(s), `取消彩蛋后应当播导入的配音（${JSON.stringify(s)}）`);
+    const sp = await js(pet, "document.getElementById('speech').classList.contains('show')");
+    check(s.videoMuted === true && !played(s) && !sp, `取消彩蛋应为沉默暴躁（${JSON.stringify(s)} speech=${sp}）`);
     await sleep(900);
   });
 
@@ -403,6 +409,26 @@ async function runSelfTest(ctx) {
     await setSettings({ head: null, voice: null, voiceEaster: true });
   });
 
+  await step('rage-mode', async () => { // 未勾选原声彩蛋：不显示台词也不播音，逐渐暴躁疯狂打字
+    await setSettings({ voiceEaster: false, head: null, headMode: 'photo', headLock: true, voice: null });
+    await sleep(300);
+    await js(pet, "document.getElementById('speech').classList.remove('show'); document.querySelectorAll('.kcap').forEach(n => n.remove()); 1"); // 清掉上一步残留的气泡和台词
+    const bubblesBefore = await js(pet, "document.querySelectorAll('.kcap').length");
+    trigger();
+    await sleep(500);
+    const r = JSON.parse(await js(pet, "JSON.stringify({ speech: document.getElementById('speech').classList.contains('show'),"
+      + " bubbles: document.querySelectorAll('.kcap').length, angry: document.body.classList.contains('angry') })"));
+    const vs = await voiceState();
+    check(r.angry === true, '暴躁模式应有生气表情');
+    check(r.speech === false, `未勾选彩蛋时不应显示台词（${JSON.stringify(r)}）`);
+    check(r.bubbles > bubblesBefore + 2, `暴躁时应疯狂击打键盘（气泡 ${bubblesBefore}→${r.bubbles}）`);
+    check(vs.audioTried === false && !vs.audioPlaying, `未勾选彩蛋时不应播放任何声音（${JSON.stringify(vs)}）`);
+    await shot('07-rage');
+    summary.statusRage = { ...status() };
+    await sleep(2600);
+    await setSettings({ voiceEaster: true });
+    await sleep(200);
+  });
   await step('head-broken', async () => {
     if (!hasFixtures) throw new SkipError(); // 视频文件打不开 → 自动换回内置头，不留黑框
     const broken = path.join(dir, 'broken.mp4');
@@ -416,7 +442,10 @@ async function runSelfTest(ctx) {
   // ---------- 平台：标签和键盘刻字按平台来 ----------
   await step('platform', async () => {
     await setSettings({ keyBubbles: true, head: null, headMode: 'photo' });
-    await sleep(200);
+    for (let i = 0; i < 12; i++) { // 等上一步的气泡动画全部结束，避免读到旧气泡
+      if ((await js(pet, "document.querySelectorAll('.kcap').length")) === 0) break;
+      await sleep(250);
+    }
     key('shift');
     await sleep(60);
     const label = await js(pet, "(() => { const b = document.querySelectorAll('.kcap'); return b.length ? b[b.length - 1].textContent : null; })()");

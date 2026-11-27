@@ -137,7 +137,7 @@ test('猫身带实时计算的 S 形尾巴（含两只黄猫），人偶身没�
   for (const [base, tip] of [[0, 0], [25, -40], [-25, 60], [45, -70]]) {
     const { d, dTip } = ART.tailPathD(base, tip);
     assert.ok(!/NaN/.test(d + dTip), `角度 ${base}/${tip} 出现 NaN`);
-    assert.ok(d.startsWith('M126'), '路径应从尾根出发');
+    assert.ok(/^M118(\.0)? 88(\.0)?/.test(d), '路径应从尾根 (118,88) 出发');
     assert.ok(d.length > dTip.length, '尾尖段应是整条路径的子集');
     assert.ok(d.endsWith(dTip.slice(-10)), '尾尖段必须与整条尾巴共享同一几何（否则接口会错位）');
   }

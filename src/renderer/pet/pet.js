@@ -11,7 +11,7 @@
   const rand = (a, b) => a + Math.random() * (b - a);
 
   // 二阶阻尼弹簧：动作目标变了，值会「追」过去并带一点过冲，比直接赋值生动得多
-  function makeSpring(hz, damping) {
+  function makeSpring(hz, damping, min, max) {
     return {
       x: 0, v: 0,
       step(target, dt) {
@@ -22,17 +22,20 @@
           this.v += (w * w * (target - this.x) - 2 * damping * w * this.v) * h;
           this.x += this.v * h;
         }
+        // 限幅：连击踢再多也不会甩飞（注意 squash 的取值范围在 1.0 附近，不能用对称限幅）
+        this.x = Math.min(max, Math.max(min, this.x));
         return this.x;
       },
       kick(dv) { this.v += dv; },
     };
   }
   // 头 2.6Hz、脊柱 1.9Hz、挤压 2.6Hz、尾根 1.6Hz、尾尖 3.2Hz：互不同步，动作才有层次
-  const springHead = makeSpring(2.6, 0.62);
-  const springSpine = makeSpring(1.9, 0.72);
-  const springSquash = makeSpring(2.6, 0.54);
-  const springTail = makeSpring(1.6, 0.5);
-  const springTailTip = makeSpring(3.2, 0.4);
+  const springHead = makeSpring(2.6, 0.62, -30, 30);
+  const springSpine = makeSpring(1.9, 0.72, -20, 20);
+  const springSquash = makeSpring(2.6, 0.54, 0.7, 1.35);
+  const springTail = makeSpring(1.6, 0.5, -40, 40);
+  const springTailTip = makeSpring(3.2, 0.4, -55, 55);
+
 
   // 肩膀在身子两侧偏下；爪子平时停在基准键上，打字时移到对应的键
   const PAW = {
@@ -66,8 +69,9 @@
     frenzy: false, acc: 0, demoUntil: -9, demoIdx: 0,
     angryUntil: -9, anger: 0, lastAngerAt: -9,
     happyUntil: -9, lastInputAt: -9,
-    petTilt: 0, lastSfx: -9, lastBubble: -9, lastHeart: -9, lastMeow: -9, lastPatLine: -9,
+    petTilt: 0, lastSfx: -9, lastBubble: -9, lastHeart: -9, lastMeow: -9, lastPatLine: -9, lastTailKick: -9,
     combo: [], voiceUntil: -9,
+    rageUntil: -9, rageT0: -9, // 暴躁模式：未勾选「原声彩蛋」时，触发台词的场合改为疯狂击打键盘
     fidget: null, // 闲时小动作：歪头 / 张望 / 抖耳朵 / 伸懒腰 / 挪窝
     fx: { lookX: 0, stretchY: 0, shiftX: 0, earWig: 0, tilt: 0 },
   };
@@ -274,7 +278,7 @@
     p.lastKey = now;
     st.lastHand = hand;
     springSquash.kick(0.02);
-    springTailTip.kick(rand(0.7, 1.7));
+    if (now - st.lastTailKick > 0.26) { st.lastTailKick = now; springTailTip.kick(rand(0.7, 1.7)); }
     if (s.keyBubbles && (now - st.lastBubble > 0.05)) {
       spawnBubble(ev.label, hit ? [hit.x, hit.y - 8] : [p.x, p.y - 10]);
     }
@@ -353,14 +357,22 @@
   function angry() {
     const now = st.t;
     st.lastAngerAt = now;
-    st.angryUntil = now + 2.8;
-    say(ANGRY_LINE, 2700, 'fire');
+    const s = cfg.settings;
+    // 触发「能别放屁吗」：两种状态都会逐渐暴躁、疯狂击打键盘
+    st.angryUntil = now + 2.6;
+    st.rageUntil = now + 2.6;
+    st.rageT0 = now;
     springTailTip.kick(10);
     springSquash.kick(0.1);
-    const source = voiceSource(cfg.settings, cfg.meta);
-    if (source === 'video') playOriginal();
-    else if (source === 'voice') playVoice();
-    else sfx.angry();
+    if (s.voiceEaster) {
+      // 打开「原声彩蛋」：额外在头上显示台词，并播放对应声音（视频原声 / 导入配音 / 合成）
+      say(ANGRY_LINE, 2700, 'fire');
+      const src = voiceSource(s, cfg.meta);
+      if (src === 'video') playOriginal();
+      else if (src === 'voice') playVoice();
+      else sfx.angry();
+    }
+    // 关闭状态：沉默地暴躁，只有键盘声
   }
 
   function pat(x, y) {
@@ -574,8 +586,12 @@
       st.voiceUntil = -9;
     }
 
-    // 自动打字：试试打字 / 高速暴走
-    const rate = st.frenzy ? 0.055 : (t < st.demoUntil ? 0.13 : 0);
+    // 自动打字：试试打字 / 高速暴走 / 暴躁（未勾选彩蛋时的触发反应，速度越打越快）
+    let rate = st.frenzy ? 0.055 : (t < st.demoUntil ? 0.13 : 0);
+    if (t < st.rageUntil && !st.frenzy) {
+      const prog = 1 - (st.rageUntil - t) / Math.max(0.001, st.rageUntil - st.rageT0);
+      rate = 0.09 - 0.055 * prog;
+    }
     if (rate) {
       st.acc += dt;
       while (st.acc >= rate) {
@@ -704,7 +720,7 @@
   function report() {
     window.pet.status({
       fps,
-      mode: st.frenzy ? '暴走中' : st.anger > 0.1 ? '生气' : (st.t - st.lastInputAt < 3 || st.t < st.demoUntil) ? '活跃' : '待机',
+      mode: st.frenzy ? '暴走中' : st.t < st.rageUntil ? '暴躁' : st.anger > 0.1 ? '生气' : (st.t - st.lastInputAt < 3 || st.t < st.demoUntil) ? '活跃' : '待机',
     });
   }
 

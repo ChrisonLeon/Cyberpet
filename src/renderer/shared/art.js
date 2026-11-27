@@ -13,9 +13,9 @@
   // 尾巴：单一连续曲线，每帧按两个弹簧角度实时重建路径——
   // 没有两段刚体的接缝，任何角度组合下轮廓都是平滑的。
   // 几何（torso viewBox 坐标）：尾根 (126,98)，静止方向 角度（度），段长
-  const TAIL_ROOT = [126, 98];
-  const TAIL_REST = { base: -21.4, tip: -54.3 }; // 相对水平线的静止方向
-  const TAIL_LEN = { base: 65.6, tip: 50 };
+  const TAIL_ROOT = [118, 88];  // 装在背部，远离键盘（键盘上沿在 stage y≈318）
+  const TAIL_REST = { base: -26, tip: -74 }; // 静止方向：向右上扬再折向竖直，呈 S 形
+  const TAIL_LEN = { base: 60, tip: 50 };
 
   function smooth01(x) {
     const t = Math.min(1, Math.max(0, x));
@@ -29,6 +29,9 @@
    */
   function tailPathD(baseDeg, tipDeg) {
     const rad = (deg) => (deg * Math.PI) / 180;
+    // 输入钳制（双保险）：无论调用方传多大，几何永远在安全范围内、永远平滑
+    baseDeg = Math.min(40, Math.max(-40, baseDeg));
+    tipDeg = Math.min(70, Math.max(-70, tipDeg));
     const a1 = TAIL_REST.base + rad(baseDeg);
     const a2 = TAIL_REST.tip + rad(baseDeg + tipDeg);
     const pts = [];

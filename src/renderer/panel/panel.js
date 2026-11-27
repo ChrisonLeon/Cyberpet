@@ -81,7 +81,7 @@
     const mode = fresh ? state.mode : '未响应';
     els.fpsVal.textContent = fresh ? `${state.fps} FPS` : '-- FPS';
     els.modeVal.textContent = mode;
-    els.fpsDot.style.background = { 暴走中: '#2f6fe0', 生气: '#ff5a3c', 活跃: '#22c55e', 待机: '#b5bccd' }[mode] || '#b5bccd';
+    els.fpsDot.style.background = { 暴走中: '#2f6fe0', 暴躁: '#ff8c00', 生气: '#ff5a3c', 活跃: '#22c55e', 待机: '#b5bccd' }[mode] || '#b5bccd';
     els.btnFrenzy.classList.toggle('on', mode === '暴走中');
   }
 
