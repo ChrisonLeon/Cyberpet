@@ -168,6 +168,12 @@
     return VOICE.resolve({ headMode: s.headMode, headType: m.headType, voiceEaster: s.voiceEaster, hasVoice: !!m.voiceSrc }).source;
   }
 
+  // 合成音效的总开关和音量（配音/视频原声是媒体元素，不归它管）
+  function applySfxAudio() {
+    const s = cfg.settings;
+    if (s) sfx.setVolume(s.sfxOn === false ? 0 : s.sfxVolume);
+  }
+
   function applySettings(payload) {
     const s = payload.settings;
     const prev = cfg.settings;
@@ -204,12 +210,7 @@
       if (voice) el.voice.src = voice;
       else { el.voice.removeAttribute('src'); el.voice.load(); }
     }
-    // 「原声彩蛋」刚对视频头像生效时（勾选，或换了视频），先从头播一遍让大家听到
-    if (!inputStopped() && prev && voiceSource(s, m) === 'video'
-      && (voiceSource(prev, prevMeta) !== 'video' || prevMeta.headSrc !== m.headSrc)) {
-      stopAudio(); // 预览也只允许一个声源，不能叠着旧配音或合成音播放
-      playOriginal();
-    }
+    applySfxAudio(); // 音效开关/音量跟随设置
   }
 
   el.headImg.addEventListener('error', () => {
@@ -443,6 +444,7 @@
     if (sfx.master) sfx.master.disconnect();
     if (sfx.ctx && sfx.ctx.state !== 'closed') sfx.ctx.close().catch(() => {});
     sfx = new Sfx();
+    applySfxAudio();
   }
 
   // 视频头像的原声：从头播一遍（带声音），播完自动静音。
@@ -824,9 +826,17 @@
     if (st.frenzy !== el.body.classList.contains('frenzy')) el.body.classList.toggle('frenzy', st.frenzy);
   }
 
-  function armPath(arm, from, x, y) {
-    const mx = (from[0] + x) / 2;
-    const my = Math.max(from[1], y) + 12;
+  // 胳膊：平时自然下垂微弯；伸爪够鼠标时肘部向外弓（法线朝身体外侧），像探身去拍
+  function armPath(arm, hand, from, x, y) {
+    const reach = paw[hand].reach;
+    const dx = x - from[0];
+    const dy = y - from[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const out = hand === 'L' ? -1 : 1;
+    let nx = -dy / len, ny = dx / len; // 与肩→爪连线垂直的两个方向，取 x 分量朝外的那一个
+    if (nx * out < 0 || (nx === 0 && ny * out < 0)) { nx = -nx; ny = -ny; }
+    const mx = (from[0] + x) / 2 + nx * 26 * reach;
+    const my = Math.max(from[1], y) + 12 - 14 * reach + ny * 26 * reach;
     arm.setAttribute('d', `M${from[0]} ${from[1]} Q${mx.toFixed(1)} ${my.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
 
@@ -866,10 +876,10 @@
     const ry = R.y + R.press * 3 + R.reach * 2.5 * Math.sin(t * 34);
     el.pawL.setAttribute('transform', `translate(${L.x.toFixed(2)} ${ly.toFixed(2)}) rotate(${(-38 * L.reach).toFixed(1)})`);
     el.pawR.setAttribute('transform', `translate(${R.x.toFixed(2)} ${ry.toFixed(2)}) rotate(${(38 * R.reach).toFixed(1)})`);
-    armPath(el.armLEdge, PAW.L.shoulder, L.x, ly);
-    armPath(el.armREdge, PAW.R.shoulder, R.x, ry);
-    armPath(el.armL, PAW.L.shoulder, L.x, ly);
-    armPath(el.armR, PAW.R.shoulder, R.x, ry);
+    armPath(el.armLEdge, 'L', PAW.L.shoulder, L.x, ly);
+    armPath(el.armREdge, 'R', PAW.R.shoulder, R.x, ry);
+    armPath(el.armL, 'L', PAW.L.shoulder, L.x, ly);
+    armPath(el.armR, 'R', PAW.R.shoulder, R.x, ry);
   }
 
   function report() {

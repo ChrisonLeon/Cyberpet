@@ -7,6 +7,7 @@
       this.ctx = null;
       this.master = null;
       this.noiseBuf = null;
+      this.volume = 0.55; // 与面板「音量」滑块对应（0~1）
     }
 
     ensure() {
@@ -15,7 +16,7 @@
         if (!AC) return null;
         this.ctx = new AC();
         this.master = this.ctx.createGain();
-        this.master.gain.value = 0.55;
+        this.master.gain.value = this.volume;
         this.master.connect(this.ctx.destination);
         this.noiseBuf = this.ctx.createBuffer(1, this.ctx.sampleRate, this.ctx.sampleRate);
         const data = this.noiseBuf.getChannelData(0);
@@ -23,6 +24,12 @@
       }
       if (this.ctx.state === 'suspended') this.ctx.resume();
       return this.ctx;
+    }
+
+    // 面板「音效」开关关掉时传 0；音量设置本身保留，重新打开即恢复
+    setVolume(v) {
+      this.volume = Math.min(1, Math.max(0, Number.isFinite(Number(v)) ? Number(v) : 0.55));
+      if (this.master) this.master.gain.value = this.volume;
     }
 
     // 单个音：从 f0 滑到 f1，快速起音后指数衰减

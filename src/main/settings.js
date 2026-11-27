@@ -15,6 +15,8 @@ const DEFAULTS = {
   sticker: true,        // 贴纸白边
   keyBubbles: true,     // 按键气泡
   keySfx: true,         // 键盘音效
+  sfxOn: true,          // 合成音效总开关（键盘音 / 生气 / 喵 / 呼噜）
+  sfxVolume: 0.55,      // 合成音效音量 0~1（配音与视频原声不受它控制）
   voiceEaster: true,    // 原声彩蛋（只对视频头像有意义）
   privacy: false,       // 隐私防截屏/录屏
   switchSound: 'mahjong',
@@ -39,7 +41,7 @@ const ENUMS = {
   desk: ['transparent', 'bluewhite', 'dark', 'none'],
   kbDir: ['reverse', 'forward'],
 };
-const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock', 'angryLine', 'installChecked'];
+const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'sfxOn', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock', 'angryLine', 'installChecked'];
 const PATHS = ['head', 'voice', 'lastImageDir', 'lastVideoDir', 'lastAudioDir'];
 
 function isPos(v) {
@@ -58,6 +60,9 @@ function sanitize(patch = {}) {
   }
   if (Number.isFinite(patch.headScale)) {
     out.headScale = Math.min(1.4, Math.max(0.6, Math.round(patch.headScale * 100) / 100));
+  }
+  if (Number.isFinite(patch.sfxVolume)) {
+    out.sfxVolume = Math.min(1, Math.max(0, Math.round(patch.sfxVolume * 100) / 100));
   }
   if (Number.isFinite(patch.petScale)) {
     out.petScale = Math.min(1.5, Math.max(0.6, Math.round(patch.petScale * 20) / 20));

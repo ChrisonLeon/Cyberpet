@@ -419,12 +419,12 @@ async function runSelfTest(ctx) {
       + " shown: getComputedStyle(v).display, img: getComputedStyle(document.getElementById('headImg')).display }); })()"));
     const v = await videoState();
     summary.video = v;
-    check(!v.paused && v.ready >= 2, `视频头像没有在播放（${JSON.stringify(v)}）`);
+    check(v.paused && v.ready >= 2, `视频头像应当停在首帧，不自动播放（${JSON.stringify(v)}）`);
     check(v.shown === 'block' && v.img === 'none', '视频头像和图片头像必须互斥');
-    check(v.muted === false, '换上视频头像时「原声彩蛋」已勾选，应当立刻试听一遍原声');
+    check(v.muted === true, '换上视频头像不应自动出声（只在生气/暴躁触发时播）');
     await shot(`${String(n++).padStart(2, '0')}-import-video`);
-    await sleep(1600); // 素材视频 1.2 秒：试听结束后回到静音
-    check((await videoState()).muted === true, '试听结束后视频应当恢复静音');
+    await sleep(400);
+    check((await videoState()).paused === true, '等待期间视频也应当保持暂停');
   });
 
   // audioTried：确实发起了配音播放。CI 机器通常没有声卡，play() 会被拒绝，所以不能只看 paused。
@@ -476,11 +476,16 @@ async function runSelfTest(ctx) {
   });
 
   await step('voice-preview-on-enable', async () => {
-    if (!hasFixtures) throw new SkipError(); // 重新勾选彩蛋 → 立刻试听一次视频原声
+    if (!hasFixtures) throw new SkipError(); // 重新勾选彩蛋也不自动播放：只有生气/暴躁触发时才播
     await setSettings({ voiceEaster: true });
-    await sleep(150);
-    check((await voiceState()).videoMuted === false, '勾选原声彩蛋时应当立刻试听');
-    await sleep(1700);
+    await sleep(400);
+    const s = await voiceState();
+    check(s.videoMuted === true, `勾选原声彩蛋不应立刻试听（${JSON.stringify(s)}）`);
+    trigger();
+    await sleep(90);
+    check((await voiceState()).videoMuted === false, '勾选彩蛋后触发时仍应播原声');
+    await sleep(1700); // 素材视频 1.2 秒，播完自动静音
+    check((await voiceState()).videoMuted === true, '原声播完后应当恢复静音');
   });
 
   await step('voice-image-head', async () => {

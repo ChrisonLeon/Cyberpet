@@ -10,6 +10,7 @@
     perm: $('#perm'), permText: $('#permText'), btnPermOpen: $('#btnPermOpen'), btnRetry: $('#btnRetry'), btnPermFix: $('#btnPermFix'),
     btnHeadMode: $('#btnHeadMode'), headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
     headScale: $('#headScale'), headScaleVal: $('#headScaleVal'), petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
+    sfxVolume: $('#sfxVolume'), sfxVolumeVal: $('#sfxVolumeVal'),
     switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
     voiceEaster: $('[data-key="voiceEaster"]'), easterWrap: $('#easterWrap'),
     privacyStatus: $('#privacyStatus'), privacyReason: $('#privacyReason'), privacyCapabilities: $('#privacyCapabilities'),
@@ -183,14 +184,16 @@
     els.headScaleVal.textContent = `${Math.round(s.headScale * 100)}%`;
     els.petScale.value = s.petScale;
     els.petScaleVal.textContent = `${Math.round(s.petScale * 100)}%`;
+    els.sfxVolume.value = s.sfxVolume;
+    els.sfxVolumeVal.textContent = `${Math.round(s.sfxVolume * 100)}%`;
     for (const c of $$('[data-key]')) c.checked = !!s[c.dataset.key];
     els.voiceEaster.disabled = !r.easterEnabled;
     els.easterWrap.classList.toggle('off', !r.easterEnabled);
     els.voiceEaster.title = r.easterEnabled ? VOICE.EASTER_TITLE.video
       : (s.headMode === 'cartoon' ? VOICE.EASTER_TITLE.cartoon : VOICE.EASTER_TITLE.image);
     els.easterWrap.title = els.voiceEaster.title;
-    els.switchSound.disabled = !s.keySfx;
-    els.switchSound.title = s.keySfx ? '' : '先勾选「键盘音效」才会出声';
+    els.switchSound.disabled = !s.keySfx || s.sfxOn === false;
+    els.switchSound.title = s.keySfx && s.sfxOn !== false ? '' : s.sfxOn === false ? '「音效」开关已关闭' : '先勾选「键盘音效」才会出声';
     els.switchSound.value = s.switchSound;
     els.desk.value = s.desk;
     els.voiceName.textContent = r.source === 'video' ? '视频原声' : (d.meta.voiceName || '合成音效');
@@ -227,7 +230,7 @@
   for (const c of $$('[data-key]')) bind(c, 'change', () => set({ [c.dataset.key]: c.checked }));
   bind(els.switchSound, 'change', () => set({ switchSound: els.switchSound.value }));
   bind(els.desk, 'change', () => set({ desk: els.desk.value }));
-  for (const [input, label, key] of [[els.headScale, els.headScaleVal, 'headScale'], [els.petScale, els.petScaleVal, 'petScale']]) {
+  for (const [input, label, key] of [[els.headScale, els.headScaleVal, 'headScale'], [els.petScale, els.petScaleVal, 'petScale'], [els.sfxVolume, els.sfxVolumeVal, 'sfxVolume']]) {
     bind(input, 'input', async () => {
       const value = Number(input.value);
       label.textContent = `${Math.round(value * 100)}%`;
