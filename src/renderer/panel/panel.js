@@ -7,7 +7,7 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const els = {
     hookChip: $('#hookChip'), fpsDot: $('#fpsDot'), fpsVal: $('#fpsVal'), modeVal: $('#modeVal'),
-    perm: $('#perm'), permText: $('#permText'), btnPermOpen: $('#btnPermOpen'), btnRetry: $('#btnRetry'),
+    perm: $('#perm'), permText: $('#permText'), btnPermOpen: $('#btnPermOpen'), btnRetry: $('#btnRetry'), btnPermFix: $('#btnPermFix'),
     btnHeadMode: $('#btnHeadMode'), headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
     headScale: $('#headScale'), headScaleVal: $('#headScaleVal'), petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
     switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
@@ -91,13 +91,17 @@
     else if (hook.state === 'error') messages.push('键鼠监听启动失败，请结合诊断中的实际错误、加载方式及权限状态排查。');
     else if (!labels[hook.state]) messages.push('尚未取得有效监听状态，可重新检测并查看诊断。');
     if (mac) {
-      if (trusted === false) messages.push('辅助功能尚未授权：系统设置 → 隐私与安全性 → 辅助功能，选择与当前运行路径对应的应用。');
-      else if (trusted === null) messages.push('辅助功能授权状态 unknown，当前无法确认是否已授权。');
+      if (trusted === false) {
+        messages.push('辅助功能尚未对本程序生效：系统设置 → 隐私与安全性 → 辅助功能，勾选 Cyberpet。');
+        // 开关看着是开的却不生效，几乎都是换版后留下的失效记录（ad-hoc 签名每次更新都不同），照旧勾选救不回来
+        messages.push('若开关已经是打开状态：这条记录是旧版本留下的、对新版本无效——先关闭再打开一次；仍不行就选中条目按 − 移除后用 + 重新添加，或点「复制修复命令」在终端执行后重启本应用再勾选。');
+      } else if (trusted === null) messages.push('辅助功能授权状态 unknown，当前无法确认是否已授权。');
       messages.push('当前为 ad-hoc 签名，换版后可能需要你在「辅助功能」中重新勾选当前应用，再点「重新检测」。更新不保证免授权，程序不会自动重置系统授权。');
     }
     els.permText.textContent = messages.join(' ');
     els.perm.hidden = !messages.length;
     els.btnPermOpen.hidden = !mac;
+    els.btnPermFix.hidden = !(mac && trusted === false);
     // 权限条位于可滚动 main 中，不调用 banner 扩高窗口。
     $('#diagExecPath').textContent = meta.execPath || 'unknown（主进程未提供运行路径）';
     $('#diagInstalled').textContent = boolText(meta.isInstalled);
@@ -234,6 +238,10 @@
     accept(await api.get());
   });
   bind(els.btnPermOpen, 'click', () => api.openPermissionSettings());
+  bind(els.btnPermFix, 'click', async () => {
+    await api.copyPermissionFix();
+    toast('已复制 tccutil 重置命令：粘贴到「终端」回车执行，然后重启 Cyberpet 并重新勾选授权');
+  });
   bind($('#btnCollapse'), 'click', () => api.collapse());
   bind(document, 'keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'v') {

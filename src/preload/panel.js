@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('panel', {
   clearVoice: () => invoke('voice:clear'),
   retryHook: () => invoke('hook:retry'),
   openPermissionSettings: () => invoke('permission:open'),
+  copyPermissionFix: () => invoke('permission:copyFix'),
   collapse: () => invoke('panel:collapse'),
   banner: (show) => ipcRenderer.send('panel:banner', !!show),
   onSettings: (cb) => ipcRenderer.on('settings', (_e, payload) => cb(payload)),

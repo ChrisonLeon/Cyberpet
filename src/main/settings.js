@@ -11,7 +11,7 @@ const DEFAULTS = {
   headLock: false,      // 锁定头像位置：锁定后不能拖动头像
   petScale: 1.0,        // 整体大小（窗口 + 内容一起缩放）
   angryLine: false,     // 「能别放屁吗」台词开关：选中后触发时在头上显示台词；未选中只暴躁敲键盘
-  kbDir: 'reverse',     // 键鼠方向：reverse 反向（默认，现在的方向）| forward 正向（键盘朝向宠物自己，鼠标在右）
+  kbDir: 'reverse',     // 键鼠方向：reverse 反向（默认，鼠标在右）| forward 正向（键盘朝向宠物自己，鼠标在左）
   sticker: true,        // 贴纸白边
   keyBubbles: true,     // 按键气泡
   keySfx: true,         // 键盘音效

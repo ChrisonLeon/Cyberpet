@@ -25,6 +25,7 @@
         <span id="permText"></span>
         <div class="banner-actions">
           <button id="btnPermOpen" class="pill" hidden>打开系统设置</button>
+          <button id="btnPermFix" class="pill" hidden title="复制 tccutil 重置命令：粘贴到「终端」执行后重启本应用，再重新勾选授权">复制修复命令</button>
           <button id="btnRetry" class="pill">重新检测</button>
         </div>
       </div>
@@ -66,8 +67,8 @@
       <section class="row"><span class="lab">键鼠</span>
         <span class="note">键鼠方向</span>
         <div class="button-group" role="group" aria-label="键鼠方向">
-          <button class="pill" data-kb-dir="forward" aria-pressed="false" title="键盘朝向小猫，鼠标在右侧">正向</button>
-          <button class="pill on" data-kb-dir="reverse" aria-pressed="true" title="反向摆放（默认）">反向（默认）</button>
+          <button class="pill" data-kb-dir="forward" aria-pressed="false" title="键盘朝向小猫，鼠标在左侧">正向</button>
+          <button class="pill on" data-kb-dir="reverse" aria-pressed="true" title="反向摆放（默认），鼠标在右侧">反向（默认）</button>
         </div>
         <label class="sel">轴体<select id="switchSound">
           <option value="mahjong">麻将音</option><option value="blue">青轴</option>
@@ -104,7 +105,7 @@
           <dt>加载方式 loadVia</dt><dd id="diagLoadVia">unknown</dd>
           <dt>实际错误 error</dt><dd id="diagHookError">未报告</dd>
         </dl>
-        <p class="help">加载失败、启动失败与系统权限是不同问题，请结合实际错误排查。安装或更新本身不代表已获授权。</p>
+        <p class="help">加载失败、启动失败与系统权限是不同问题，请结合实际错误排查。安装或更新本身不代表已获授权；辅助功能开关显示已开但不生效，多半是旧版本留下的记录（ad-hoc 签名换版即失效），关掉再打开无效时可用「复制修复命令」清掉旧记录后重新勾选。</p>
       </details>
     </main>
 

@@ -109,10 +109,15 @@ async function runSelfTest(ctx) {
       await sleep(80);
       check(ignore() === want, `鼠标在 ${x},${y}：穿透=${ignore()}，应为 ${want}`);
     }
-    const kbLeft = await js(pet, "document.querySelector('#kbd [data-k=\"caps\"]').getBoundingClientRect().left");
-    const mouseRight = await js(pet, "document.getElementById('deskmouse').getBoundingClientRect().right");
-    summary.mouseGap = Math.round(kbLeft - mouseRight);
-    check(kbLeft - mouseRight > 8, `鼠标离键盘太近：${(kbLeft - mouseRight).toFixed(1)}px`);
+    // 鼠标与键盘之间取「在同侧能看见的间隙」（鼠标可能在键盘左或右，另一侧算出来是负数）。
+    // 用 computed style 的 left/width：getBoundingClientRect 会把 rotateX 投影后的放大也算进去，
+    // 而 SVG 元素没有 offsetLeft。
+    const gap = await js(pet, "(() => { const cs = (el) => getComputedStyle(el);"
+      + " const k = document.getElementById('kb'), m = document.getElementById('deskmouse');"
+      + " const kl = parseFloat(cs(k).left), ml = parseFloat(cs(m).left);"
+      + " return Math.round(Math.max(kl - (ml + parseFloat(cs(m).width)), ml - (kl + parseFloat(cs(k).width)))); })()");
+    summary.mouseGap = gap;
+    check(gap >= 20, `鼠标离键盘太近：${gap}px`);
   });
 
   await step('paw-on-key', async () => {
@@ -198,12 +203,12 @@ async function runSelfTest(ctx) {
     summary.statusTyping = { ...status() };
   });
 
-  await step('mouse', async () => { // 鼠标一动，左爪去抓鼠标
+  await step('mouse', async () => { // 鼠标一动，右爪去抓右侧的鼠标（反向默认）
     sendAction('mouse-demo');
     await sleep(800);
     await shot('05-mouse');
-    const p = await js(pet, PAW_CENTER('pawL'));
-    check(Math.hypot(p[0] - 33, p[1] - 372) <= 14, `左爪没有伸到鼠标上（${p.map(Math.round)}）`);
+    const p = await js(pet, PAW_CENTER('pawR'));
+    check(Math.hypot(p[0] - 361, p[1] - 372) <= 14, `右爪没有伸到鼠标上（${p.map(Math.round)}）`);
   });
 
   await step('mouse-press', async () => { // 左右键按下反馈：按住持续高亮，松开恢复
@@ -220,47 +225,57 @@ async function runSelfTest(ctx) {
     check(await js(pet, "!document.body.classList.contains('mx-l') && !document.body.classList.contains('mx-r')"), '松开后应清除按压标记');
   });
 
-  await step('kbdir-forward', async () => { // 正向：键盘翻转、鼠标挪到右侧，右爪去抓
+  await step('kbdir-forward', async () => { // 正向：键盘转半圈挪到左，鼠标在左下角，左爪去抓
     await setSettings({ kbDir: 'forward' });
     await sleep(400);
     const l = JSON.parse(await js(pet, "JSON.stringify({ dir: document.body.dataset.kbDir,"
       + " kbT: getComputedStyle(document.getElementById('kb')).transform,"
       + " mouseLeft: Math.round(document.getElementById('deskmouse').getBoundingClientRect().left) })"));
     check(l.dir === 'forward', `方向没有切到 forward（${l.dir}）`);
-    check(l.mouseLeft > 250, `正向时鼠标应在右侧（left=${l.mouseLeft}）`);
+    check(l.mouseLeft < 100, `正向时鼠标应在左侧（left=${l.mouseLeft}）`);
     await shot('05-kbdir-forward');
-    sendAction('mouse-demo');
-    await sleep(800);
-    const pr = await js(pet, PAW_CENTER('pawR'));
-    check(Math.hypot(pr[0] - 361, pr[1] - 372) <= 16, `正向时右爪应伸到右侧鼠标（${pr.map(Math.round)}）`);
-    // 键盘转半圈后，P 键的视觉位置到了左半边：负责它的爪子也随之换成左爪
-    await expectPawOn('p', 'pawL');
-    await setSettings({ kbDir: 'reverse' });
-    await sleep(400);
+    try {
+      // 上一步的扑鼠标窗口（2.8s）此时可能还没结束；正向时鼠标和 P 键都归左爪管，
+      // 必须等窗口结束、伸爪量彻底归零，P 键的落点才量得准
+      await sleep(2000);
+      // 键盘转半圈后，P 键的视觉位置到了左半边：负责它的爪子也随之换成左爪
+      await expectPawOn('p', 'pawL');
+      // 先按 P 再扑鼠标：正向时鼠标和 P 键都归左爪管，必须等扑鼠标的窗口结束再量落键位置
+      sendAction('mouse-demo');
+      await sleep(800);
+      const pl = await js(pet, PAW_CENTER('pawL'));
+      check(Math.hypot(pl[0] - 33, pl[1] - 372) <= 16, `正向时左爪应伸到左侧鼠标（${pl.map(Math.round)}）`);
+    } finally {
+      await setSettings({ kbDir: 'reverse' }); // 断言失败也不能把 forward 带进后面的步骤
+      await sleep(2200); // 等扑鼠标窗口结束、爪子归位
+    }
     check((await js(pet, "document.body.dataset.kbDir")) === 'reverse', '没有切回反向');
-    await sleep(2200);
   });
 
-  await step('privacy-shield', async () => { // 自动隐私保护：开启 → 遮蔽；期间输入被拦；关闭恢复
+  await step('privacy-shield', async () => { // 自动隐私保护：开启 → 遮蔽/隐藏；期间输入被拦；关闭恢复
     const before = await js(pet, "document.querySelectorAll('.kcap').length");
-    const on = await setSettings({ privacy: true });
-    check(on.privacy && on.privacy.enabled === true, `隐私开关没有生效（${JSON.stringify(on.privacy)}）`);
-    await sleep(1500); // 等探测器启动并输出
-    const state = (await setSettings({})).privacy; // 空补丁：拿当前实时状态
-    check(['shield', 'normal'].includes(state.mode), `开启后应为 shield 或 normal（${state.mode}）`);
-    const covered = await js(pet, "document.body.classList.contains('privacy')");
-    check(covered === (state.mode === 'shield'), `遮蔽标记与实际状态不符（${state.mode}）`);
-    await shot('08-privacy');
-    if (state.mode === 'shield') {
-      key('z'); // 遮蔽期间注入的按键不应变成气泡
+    try {
+      const on = await setSettings({ privacy: true });
+      check(on.privacy && on.privacy.enabled === true, `隐私开关没有生效（${JSON.stringify(on.privacy)}）`);
+      await sleep(1500); // 等探测器启动并输出
+      const state = (await setSettings({})).privacy; // 空补丁：拿当前实时状态
+      // 桌面上若正好有全屏应用或录屏软件，主进程会直接隐藏整窗（hidden），也是正确的保护形态
+      check(['shield', 'normal', 'hidden'].includes(state.mode), `开启后应为 shield、normal 或 hidden（${state.mode}）`);
+      const covered = await js(pet, "document.body.classList.contains('privacy')");
+      check(covered === (state.mode !== 'normal'), `遮蔽标记与实际状态不符（${state.mode}）`);
+      await shot('08-privacy');
+      if (state.mode !== 'normal') {
+        key('z'); // 保护期间注入的按键不应变成气泡
+        await sleep(200);
+        const after = await js(pet, "document.querySelectorAll('.kcap').length");
+        check(after === before, `保护期间按键不应显示（${before}→${after}）`);
+      }
+    } finally {
+      const off = await setSettings({ privacy: false }); // 断言失败也要关掉保护，别把 hidden 带进后面的步骤
+      check(off.privacy.mode === 'off', `关闭后应回到 off（${off.privacy.mode}）`);
+      check((await js(pet, "!document.body.classList.contains('privacy')")) === true, '关闭后应移除遮蔽标记');
       await sleep(200);
-      const after = await js(pet, "document.querySelectorAll('.kcap').length");
-      check(after === before, `遮蔽期间按键不应显示（${before}→${after}）`);
     }
-    const off = await setSettings({ privacy: false });
-    check(off.privacy.mode === 'off', `关闭后应回到 off（${off.privacy.mode}）`);
-    check((await js(pet, "!document.body.classList.contains('privacy')")) === true, '关闭后应移除遮蔽标记');
-    await sleep(200);
   });
   await step('pat', async () => { sendAction('pat'); await sleep(260); await shot('06-pat'); });
   await step('frenzy', async () => {

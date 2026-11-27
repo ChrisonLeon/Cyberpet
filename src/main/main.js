@@ -603,6 +603,10 @@ function registerIpc() {
   ipcMain.handle('permission:open', (e) => {
     if (isFromPanel(e) && IS_MAC) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
   });
+  // 「开关已是开但还是不生效」的兜底：ad-hoc 签名的记录在换版后会失效，清掉旧记录重新授权即可
+  ipcMain.handle('permission:copyFix', (e) => {
+    if (isFromPanel(e) && IS_MAC) clipboard.writeText('tccutil reset Accessibility top.baixiaochun.pet');
+  });
   ipcMain.handle('open:url', (e, url) => {
     // 只允许打开作者信息里登记过的 https 链接
     if (isFromPanel(e) && typeof url === 'string' && Object.values(AUTHOR).includes(url) && /^https:\/\//.test(url)) {

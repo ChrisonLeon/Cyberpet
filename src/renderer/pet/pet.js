@@ -60,7 +60,7 @@
 
   let sfx = new Sfx();
   const cfg = { settings: null, meta: null, headSrc: '', offset: { x: 0, y: 0 } };
-  const layout = { dir: 'reverse', mouse: PAW.L.mouse, mouseSide: 'L' };
+  const layout = { dir: 'reverse', mouse: PAW.R.mouse, mouseSide: 'R' };
   const heldKeys = new Map(); // 键名 → 首次按下时的视觉锚点，repeat 不在左右修饰键间跳动
   const mouseHeld = new Set(); // uiohook：1 左键、2 右键；与 DOM 的 0 / 2 不同
   let privacy = { enabled: false, mode: 'off' };
@@ -97,15 +97,15 @@
     el.bell = el.torso.querySelector('#bell');
   }
 
-  // 方向只在这里维护，鼠标仍留在左侧；CSS 和伸爪目标共用布局。
+  // 方向只在这里维护，反向时鼠标摆在右侧；CSS 和伸爪目标共用布局。
   function applyLayout(s) {
     layout.dir = s.kbDir === 'forward' ? 'forward' : 'reverse';
     const turn = layout.dir === 'forward' ? 180 : 0;
     el.body.dataset.kbDir = layout.dir;
     el.stage.style.setProperty('--kb-turn', `${turn}deg`);
     el.stage.style.setProperty('--mouse-turn', `${turn}deg`);
-    // 正向：键盘转半圈朝向小猫，鼠标挪到右侧同样朝内；反向：维持现在的样子
-    layout.mouseSide = layout.dir === 'forward' ? 'R' : 'L';
+    // 以屏幕前用户的视角：反向（默认）鼠标在右侧；正向：键盘转半圈朝向小猫，鼠标挪到左侧同样朝内
+    layout.mouseSide = layout.dir === 'forward' ? 'L' : 'R';
     layout.mouse = PAW[layout.mouseSide].mouse;
     invalidateKeys();
   }
