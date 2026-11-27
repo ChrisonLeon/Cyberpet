@@ -284,6 +284,7 @@ async function runSelfTest(ctx) {
       check(['shield', 'normal', 'hidden'].includes(state.mode), `开启后应为 shield、normal 或 hidden（${state.mode}）`);
       const covered = await js(pet, "document.body.classList.contains('privacy')");
       check(covered === (state.mode !== 'normal'), `遮蔽标记与实际状态不符（${state.mode}）`);
+      check(await js(panel, "!document.getElementById('privacyMore').classList.contains('off')") === true, '开启隐私保护后说明应当允许展开');
       await shot('08-privacy');
       if (state.mode !== 'normal') {
         key('z'); // 保护期间注入的按键不应变成气泡
@@ -295,6 +296,7 @@ async function runSelfTest(ctx) {
       const off = await setSettings({ privacy: false }); // 断言失败也要关掉保护，别把 hidden 带进后面的步骤
       check(off.privacy.mode === 'off', `关闭后应回到 off（${off.privacy.mode}）`);
       check((await js(pet, "!document.body.classList.contains('privacy')")) === true, '关闭后应移除遮蔽标记');
+      check((await js(panel, "document.getElementById('privacyMore').classList.contains('off') && !document.getElementById('privacyMore').open")) === true, '关闭隐私保护后说明应当重新折叠');
       await sleep(200);
     }
   });
@@ -503,7 +505,7 @@ async function runSelfTest(ctx) {
       + " sfxOn: !!document.querySelector('[data-key=\"sfxOn\"]'), soundDisabled: document.getElementById('switchSound').disabled, head: document.getElementById('headName').textContent,"
       + " title: document.querySelector('h1').textContent,"
       + " about: document.getElementById('aboutText').textContent,"
-      + " qrs: [!!document.getElementById('qrWechat'), !!document.getElementById('qrAlipay'), !!document.getElementById('qrZoom')] })"));
+      + " privacyMoreOff: (document.getElementById('privacyMore').classList.contains('off') && !document.getElementById('privacyMore').open) })"));
     summary.panel = a;
     check(a.dirs === 0, '素材目录配置应当已经去掉');
     check((await js(panel, "document.querySelectorAll('[data-body]').length")) === 4, '应当有 4 种身子（人偶身已删除）');
@@ -518,7 +520,9 @@ async function runSelfTest(ctx) {
     check(a.head.includes('当前：'), '没有显示当前头像');
     check(a.title.includes('CyberPet'), `面板标题应当包含软件名（${a.title}）`);
     check(a.about.includes('作者：'), `应当显示作者信息（${a.about}）`);
-    check(a.qrs.every(Boolean), '应当有微信/支付宝收款码和放大弹层');
+    const qrs = await js(panel, "[!!document.getElementById('qrWechat'), !!document.getElementById('qrAlipay'), !!document.getElementById('qrZoom')].every(Boolean)");
+    check(qrs === true, '应当有微信/支付宝收款码和放大弹层');
+    check(a.privacyMoreOff === true, '隐私关闭时说明应当折叠且不可展开');
     // 收款码图片要真的加载出来（打包后从 asar 里读）
     for (const id of ['qrWechat', 'qrAlipay']) {
       await sleep(200);

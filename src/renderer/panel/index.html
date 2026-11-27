@@ -40,7 +40,7 @@
       <section class="row"><span class="lab">头像</span>
         <button class="pill" id="btnPickHead" title="选择图片即生效；支持 PNG / JPG / GIF / 动态 PNG，也可按 ⌘V / Ctrl+V 粘贴图片">选图片</button>
         <button class="pill" id="btnResetHead" title="恢复默认：清掉导入的图片，回到 Q 版猫头">还原默认头像</button>
-        <span class="note full" id="headName"></span>
+        <span class="note" id="headName"></span>
       </section>
 
       <section class="row"><span class="lab">互动</span>
@@ -53,36 +53,41 @@
       </section>
 
       <section class="row"><span class="lab">调节</span>
-        <label class="slider">头大小<input type="range" id="headScale" min="0.6" max="1.4" step="0.01"><b id="headScaleVal"></b></label>
-        <label class="slider" title="整个桌宠变大变小（窗口一起缩放）">整体大小<input type="range" id="petScale" min="0.6" max="1.5" step="0.05"><b id="petScaleVal"></b></label>
-        <label class="chk" title="锁定后不能拖动头像调整位置；未锁定时按住头像拖动可调整位置"><input type="checkbox" data-key="headLock">锁定头像位置</label>
-        <button class="pill ghost" id="btnResetHeadPos" title="仅将头像偏移归位，不改变锁定设置">头像归位</button>
-        <label class="chk"><input type="checkbox" data-key="sticker">贴纸白边</label>
-        <label class="chk"><input type="checkbox" data-key="keyBubbles">按键气泡</label>
-        <label class="chk"><input type="checkbox" data-key="keySfx">键盘音效</label>
-      </section>
-
-      <section class="row"><span class="lab">键鼠</span>
-        <span class="note">键鼠方向</span>
-        <div class="button-group" role="group" aria-label="键鼠方向">
-          <button class="pill" data-kb-dir="forward" aria-pressed="false" title="键盘朝向小猫，鼠标在左侧">正向</button>
-          <button class="pill on" data-kb-dir="reverse" aria-pressed="true" title="反向摆放（默认），鼠标在右侧">反向（默认）</button>
+        <div class="line">
+          <span class="note">键鼠方向</span>
+          <div class="button-group" role="group" aria-label="键鼠方向">
+            <button class="pill" data-kb-dir="forward" aria-pressed="false" title="键盘朝向小猫，鼠标在左侧">正向</button>
+            <button class="pill on" data-kb-dir="reverse" aria-pressed="true" title="反向摆放（默认），鼠标在右侧">反向（默认）</button>
+          </div>
+          <label class="sel">桌面<select id="desk">
+            <option value="bluewhite">蓝白桌面（默认）</option><option value="transparent">透明</option><option value="dark">暗夜桌面</option><option value="none">无道具</option>
+          </select></label>
         </div>
-        <label class="sel">轴体<select id="switchSound">
-          <option value="mahjong">麻将音</option><option value="blue">青轴</option>
-          <option value="woodfish">木鱼</option><option value="kitten">奶猫爪</option>
-        </select></label>
-        <label class="chk" title="合成音效总开关：键盘音、生气、喵、呼噜都受它控制；配音与视频原声不受影响"><input type="checkbox" data-key="sfxOn">音效</label>
-        <label class="slider" title="合成音效音量（键盘音、生气、喵、呼噜）">音量<input type="range" id="sfxVolume" min="0" max="1" step="0.05"><b id="sfxVolumeVal"></b></label>
-        <label class="sel">桌面<select id="desk">
-          <option value="transparent">透明（默认）</option><option value="bluewhite">蓝白桌面</option><option value="dark">暗夜桌面</option><option value="none">无道具</option>
-        </select></label>
+        <div class="line">
+          <label class="slider">头大小<input type="range" id="headScale" min="0.6" max="1.4" step="0.01"><b id="headScaleVal"></b></label>
+          <label class="slider" title="整个桌宠变大变小（窗口一起缩放）">整体大小<input type="range" id="petScale" min="0.6" max="1.5" step="0.05"><b id="petScaleVal"></b></label>
+        </div>
+        <div class="line">
+          <label class="sel">轴体<select id="switchSound">
+            <option value="mahjong">麻将音</option><option value="blue">青轴</option>
+            <option value="woodfish">木鱼</option><option value="kitten">奶猫爪</option>
+          </select></label>
+          <label class="chk" title="合成音效总开关：键盘音、生气、喵、呼噜都受它控制；导入配音不受影响"><input type="checkbox" data-key="sfxOn">音效</label>
+          <label class="slider" title="合成音效音量（键盘音、生气、喵、呼噜）">音量<input type="range" id="sfxVolume" min="0" max="1" step="0.05"><b id="sfxVolumeVal"></b></label>
+        </div>
+        <div class="line">
+          <label class="chk"><input type="checkbox" data-key="sticker">贴纸白边</label>
+          <label class="chk"><input type="checkbox" data-key="keyBubbles">按键气泡</label>
+          <label class="chk"><input type="checkbox" data-key="keySfx">键盘音效</label>
+          <label class="chk" title="锁定后不能拖动头像调整位置；未锁定时按住头像拖动可调整位置"><input type="checkbox" data-key="headLock">锁定头像位置</label>
+          <button class="pill ghost" id="btnResetHeadPos" title="仅将头像偏移归位，不改变锁定设置">头像归位</button>
+        </div>
       </section>
 
       <section class="row"><span class="lab">配音</span>
-        <span class="voice" id="voiceWrap">当前声音：<em id="voiceName">合成音效</em></span>
         <button class="pill" id="btnPickVoice" title="导入 mp3 / m4a / wav，生气触发时播放">导入配音</button>
         <button class="pill ghost" id="btnClearVoice" hidden>清除配音</button>
+        <span class="voice">当前声音：<em id="voiceName">合成音效</em></span>
         <span class="note full">生气触发时播放导入的配音；没有导入就用合成音效。台词开关不影响声音。</span>
       </section>
 
@@ -90,8 +95,11 @@
         <label class="chk"><input type="checkbox" data-key="privacy">自动隐私保护</label>
         <span id="privacyStatus" class="chip wait" role="status" aria-live="polite">实际状态未知</span>
         <span id="privacyReason" class="note full">等待主进程报告实际保护状态。</span>
-        <p class="help full">开启后，在检测能力可用时：安全输入 → 闭眼并遮挡键盘；全屏或常见录屏软件运行 → 自动隐藏桌宠。无法识别所有密码框或录屏，也不保证截图、共享时不可见。能力 unknown 表示当前不可用或尚未确认，不能视作已保护。</p>
-        <ul id="privacyCapabilities" class="capabilities full" aria-label="隐私检测能力"></ul>
+        <details id="privacyMore" class="more full">
+          <summary>隐私保护说明与检测能力</summary>
+          <p class="help">开启后，在检测能力可用时：安全输入 → 闭眼并遮挡键盘；全屏或常见录屏软件运行 → 自动隐藏桌宠。无法识别所有密码框或录屏，也不保证截图、共享时不可见。能力 unknown 表示当前不可用或尚未确认，不能视作已保护。</p>
+          <ul id="privacyCapabilities" class="capabilities" aria-label="隐私检测能力"></ul>
+        </details>
       </section>
 
       <details id="diagnostics" class="diagnostics">

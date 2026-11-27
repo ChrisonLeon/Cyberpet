@@ -21,7 +21,7 @@ const PLATFORM = SELFTEST_DIR && process.env.BXC_PET_PLATFORM ? process.env.BXC_
 
 const APP_TITLE = 'Cyberpet';
 const PET_SIZE = { width: 394, height: 430 };
-const PANEL_SIZE = { width: 840, height: 1060 }; // 宽高按内容实测校准（selftest「面板布局」日志），默认视图一屏放下、无滚动条
+const PANEL_SIZE = { width: 840, height: 1070 }; // 宽高按内容实测校准（selftest「面板布局」日志），默认视图一屏放下、无滚动条
 const BANNER_H = 82; // 授权横幅出现时窗口扩高的量（横幅高度 + 上下边距）
 const ACTIONS = new Set(['type-demo', 'frenzy', 'mouse-demo', 'pat', 'angry']);
 const HEAD_VIDEO_EXTS = new Set(['mp4', 'webm', 'mov', 'm4v']);

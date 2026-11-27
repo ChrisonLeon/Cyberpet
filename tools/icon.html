@@ -11,22 +11,22 @@
       --tail: #1b1a20; --tail-tip: #1b1a20; --tail-hi: #4d4c59;
     }
     #app { position: absolute; left: 0; top: 0; width: 1024px; height: 1024px; }
-    /* 暗黑桌面：深夜蓝黑渐变底，黑猫在暗色键盘上敲字 */
+    /* 白底：黑猫和暗色键盘在浅色底上对比最清楚 */
     #app .bg {
       position: absolute; inset: 0; border-radius: 228px;
-      background: linear-gradient(165deg, #323a4f 0%, #1d2330 46%, #10131c 100%);
+      background: linear-gradient(165deg, #ffffff 0%, #f0f4fa 55%, #e4eaf4 100%);
     }
     #app .glow {
       position: absolute; left: 132px; top: 60px; width: 760px; height: 760px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(91, 150, 255, .30) 0%, rgba(91, 150, 255, 0) 66%);
+      background: radial-gradient(circle, rgba(91, 150, 255, .16) 0%, rgba(91, 150, 255, 0) 66%);
     }
     #app .sheen {
       position: absolute; left: 60px; top: 40px; width: 520px; height: 300px; border-radius: 50%;
-      background: radial-gradient(ellipse, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, 0) 70%);
+      background: radial-gradient(ellipse, rgba(91, 150, 255, .10) 0%, rgba(91, 150, 255, 0) 70%);
     }
     #app .floor {
       position: absolute; left: 182px; top: 880px; width: 660px; height: 110px; border-radius: 50%;
-      background: radial-gradient(ellipse, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, 0) 70%);
+      background: radial-gradient(ellipse, rgba(30, 42, 70, .22) 0%, rgba(30, 42, 70, 0) 70%);
     }
     #app .kb { position: absolute; left: 162px; top: 712px; width: 700px; height: 257px; }
     #app .kb .sil { fill: #fff; stroke: #fff; stroke-width: 4; }

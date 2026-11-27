@@ -135,6 +135,15 @@
     const enabled = p && typeof p.enabled === 'boolean' ? p.enabled : null;
     els.privacyStatus.textContent = valid ? `实际：${modes[p.mode]}` : '实际状态 unknown';
     els.privacyStatus.className = `chip ${!valid ? 'warn' : p.mode === 'shield' || p.mode === 'hidden' ? 'ok' : 'wait'}`;
+    // 说明与检测能力折叠在 details 里：只有开启保护时才允许展开；刚开启时自动展开一次
+    const more = document.getElementById('privacyMore');
+    if (more) {
+      const off = enabled !== true;
+      more.classList.toggle('off', off);
+      if (off) more.open = false;
+      else if (!state.privacyOnPrev) more.open = true;
+      state.privacyOnPrev = enabled === true;
+    }
     const reasons = {
       'secure-input': '检测到系统安全输入', secureInput: '检测到系统安全输入',
       fullscreen: '检测到全屏应用', 'full-screen': '检测到全屏应用',

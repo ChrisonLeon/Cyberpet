@@ -49,8 +49,10 @@ main {
 /* 每个配置区一张浅色卡片，替代原来的虚线分隔，层次更清楚 */
 .row {
   display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 14px; margin-bottom: 8px;
-  border-radius: 14px; background: #f7f9fd; border: 1px solid #eef2f9;
+  border-radius: 14px; background: #eef2fa; border: 1px solid #e4eaf5;
 }
+/* 合并区域里的一行控件 */
+.row .line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 0 0 100%; }
 .lab { flex: none; width: 38px; font-size: 14.5px; color: #69738c; font-weight: 600; }
 .pill {
   min-height: 33px; padding: 4px 11px; border-radius: 999px; border: 1px solid #e3e8f4; background: #fff; color: #39415a;
@@ -81,7 +83,7 @@ main {
 .capabilities li { overflow-wrap: anywhere; }
 .diagnostics {
   padding: 8px 14px; margin-bottom: 8px; border-radius: 14px;
-  background: #f7f9fd; border: 1px solid #eef2f9;
+  background: #eef2fa; border: 1px solid #e4eaf5;
 }
 .diagnostics summary { color: #39415a; cursor: pointer; padding: 2px 0; }
 .diagnostics dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 7px 10px; font-size: 14px; }
@@ -97,6 +99,12 @@ footer { flex: 0 0 auto; padding: 8px 18px 10px; border-top: 1px solid #e8ecf5; 
 /* ---------- 支持：作者信息 + 为爱发电收款码 ---------- */
 .support .full { padding-left: 0; }
 .qr-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+/* ---------- 隐私说明折叠：关闭时置灰不可展开 ---------- */
+.more { padding-left: 46px; }
+.more summary { color: #39415a; cursor: pointer; font-size: 14px; }
+.more.off { opacity: .55; pointer-events: none; }
+.more .help { margin: 8px 0; }
+.more .capabilities { padding-left: 0; }
 .qr {
   display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 12px;
   border: 1px solid #e3e8f4; background: #fff; cursor: pointer; font: inherit; line-height: 1.2;
