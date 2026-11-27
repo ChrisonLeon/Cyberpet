@@ -9,12 +9,15 @@
   const ARROWS = { left: '←', up: '↑', right: '→', down: '↓' };
   const MAC = { shift: '⇧', ctrl: '⌃', alt: '⌥', meta: '⌘', backspace: '⌫', enter: '↵', space: 'Space', tab: '⇥', esc: 'Esc', caps: 'Caps' };
   const WIN = { shift: 'Shift', ctrl: 'Ctrl', alt: 'Alt', meta: 'Win', backspace: '⌫', enter: 'Enter', space: 'Space', tab: 'Tab', esc: 'Esc', caps: 'Caps' };
-  const COMMON = { del: 'Del', ins: 'Ins', home: 'Home', end: 'End', pgup: 'PgUp', pgdn: 'PgDn', numlock: 'Num', menu: '☰' };
+  const COMMON = { del: 'Del', ins: 'Ins', home: 'Home', end: 'End', pgup: 'PgUp', pgdn: 'PgDn', numlock: 'Num', menu: '☰', print: 'PrtSc', scroll: 'ScrLk' };
+  const NUMPAD = { numadd: '+', numsub: '-', nummul: '*', numdiv: '/', numdot: '.', numenter: '↵' };
 
   function labelFor(name, platform) {
     if (!name) return '';
     if (ARROWS[name]) return ARROWS[name];
     if (/^f\d{1,2}$/.test(name)) return name.toUpperCase();
+    if (/^num\d$/.test(name)) return name.slice(3);
+    if (NUMPAD[name]) return NUMPAD[name];
     const table = Object.assign({}, COMMON, platform === 'darwin' ? MAC : WIN);
     if (table[name]) return table[name];
     if (/^[a-z]$/.test(name)) return name.toUpperCase();
@@ -31,7 +34,11 @@
   function fallbackAnchor(name) {
     if (!name) return null;
     if (/^f([1-9]|1[0-2])$/.test(name)) return [Number(name.slice(1)) <= 6 ? '2' : '0', 0, -26];
-    if (/^numpad/.test(name)) return ['ctrl', 84, 10];
+    // 小键盘键：画了小键盘的配列用真实键位；没画的（80% 及以下）数字/点/回车兜底到主键区对应键
+    if (/^num\d$/.test(name)) return [name.slice(3), 0, 0];
+    if (name === 'numdot') return ['.', 0, 0];
+    if (name === 'numenter') return ['enter', 0, 0];
+    if (/^num(add|sub|mul|div)$/.test(name)) return null;
     return ANCHORS[name] || null;
   }
 

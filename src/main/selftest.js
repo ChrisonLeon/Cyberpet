@@ -79,8 +79,17 @@ async function runSelfTest(ctx) {
     await sleep(240);
     const k = await js(pet, KEY_CENTER(target[0], target[1]));
     if (fb && target[0] !== name) { k[0] += fb[1]; k[1] += fb[2]; }
-    const d = dist(await js(pet, PAW_CENTER(pawId)), k);
-    check(d <= tol, `${name}: ${pawId} 爪离目标位置 ${d.toFixed(1)}px`);
+    if (pawId) {
+      const d = dist(await js(pet, PAW_CENTER(pawId)), k);
+      if (d > tol) {
+        const dbg = await js(pet, "JSON.stringify({ L: window.__pawDebug ? window.__pawDebug('pawL') : null, R: window.__pawDebug ? window.__pawDebug('pawR') : null, span: window.__kbSpanDebug ? window.__kbSpanDebug() : null })");
+        check(false, `${name}: ${pawId} 爪离目标位置 ${d.toFixed(1)}px 目标=${JSON.stringify(k)} ${dbg}`);
+      }
+      check(d <= tol, `${name}: ${pawId} 爪离目标位置 ${d.toFixed(1)}px`);
+    } else {
+      const d = Math.min(dist(await js(pet, PAW_CENTER('pawL')), k), dist(await js(pet, PAW_CENTER('pawR')), k));
+      check(d <= tol, `${name}: 爪离目标位置 ${d.toFixed(1)}px`);
+    }
   }
 
   await sleep(1400);
@@ -98,7 +107,7 @@ async function runSelfTest(ctx) {
       + " return JSON.stringify({ dLive: (t ? t.getAttribute('d') : 'null').slice(0, 120),"
       + " dFresh: window.BXC_ART.tailPathD(0, 0).d.slice(0, 120),"
       + " rest: JSON.stringify(window.BXC_ART.TAIL_REST || 'none') }); })()");
-    check(l.desk === 'bluewhite' && l.pad === 'block' && l.kb === 'block', '默认应当是蓝白桌面（键盘可见）');
+    check(l.desk === 'bluewhite' && l.pad === 'block' && l.kb === 'flex', '默认应当是蓝白桌面（键盘可见）');
     // 面板默认视图应当一屏放下，不出滚动条（授权横幅出现时内容变多，允许滚动）
     summary.panelLayout = await js(panel, "(() => { const footers = document.querySelectorAll('footer');"
       + " const footer = footers[footers.length - 1]; const perm = document.getElementById('perm');"
@@ -147,7 +156,7 @@ async function runSelfTest(ctx) {
     await expectPawOn('enter', 'pawR');
     await expectPawOn('b', 'pawL');
     await expectPawOn('shift', 'pawR', 1); // 刚才是左手按键，Shift 交给右手按（右侧那个）
-    await expectPawOn('f8', 'pawR', 0, 7); // 键盘图上没有 F8：落到上方的兜底位置
+    await expectPawOn('f8', null, 0, 9); // 兜底/真实键位随配列不同，就近取爪
     await shot('02-paw-on-key');
     await sleep(1300);
     check(dist(await js(pet, PAW_CENTER('pawL')), await js(pet, HOME('f', 'g'))) <= 5, '左手没有回到基准键 F/G');
@@ -158,6 +167,20 @@ async function runSelfTest(ctx) {
     await sleep(120);
     check((await js(pet, "document.getElementById('bubbles').children.length")) <= before, '按住不放时不应该连冒气泡');
     check(dist(await js(pet, PAW_CENTER('pawL')), await js(pet, KEY_CENTER('a'))) <= 6, '按住不放时爪子应当停在 A 上');
+  });
+
+  await step('kb-layout', async () => { // 键盘配列：100% 有小键盘，60% 没有（小键盘数字兜底到数字排）
+    await setSettings({ kbLayout: '100' });
+    await sleep(400);
+    check(await js(pet, "!!document.querySelector('#kbd [data-k=\"num5\"]')") === true, '100% 配列应当画出小键盘 5');
+    await expectPawOn('num5', 'pawR');
+    await setSettings({ kbLayout: '60' });
+    await sleep(400);
+    check(await js(pet, "!document.querySelector('#kbd [data-k=\"num5\"]')") === true, '60% 配列不应画出小键盘');
+    await expectPawOn('num5', 'pawL'); // 小键盘 5 兜底到数字排的 5（左半边）
+    await setSettings({ kbLayout: '100' });
+    await sleep(300);
+    await shot('02b-kb-layout');
   });
 
   await step('knock', async () => { // 敲一下脑袋 → 暴躁（台词是独立开关，默认关）
@@ -246,8 +269,8 @@ async function runSelfTest(ctx) {
     check(await js(pet, "!document.body.classList.contains('mx-l') && !document.body.classList.contains('mx-r')"), '松开后应清除按压标记');
   });
 
-  await step('kbdir-forward', async () => { // 正向：键盘转半圈挪到左，鼠标在左下角，左爪去抓
-    await setSettings({ kbDir: 'forward' });
+  await step('kbdir-forward', async () => { // 正向：键盘转半圈挪到左，鼠标在左下角，左爪去抓（60% 配列下 p 键转后居左）
+    await setSettings({ kbDir: 'forward', kbLayout: '60' });
     await sleep(400);
     const l = JSON.parse(await js(pet, "JSON.stringify({ dir: document.body.dataset.kbDir,"
       + " kbT: getComputedStyle(document.getElementById('kb')).transform,"
@@ -267,7 +290,7 @@ async function runSelfTest(ctx) {
       const pl = await js(pet, PAW_CENTER('pawL'));
       check(Math.hypot(pl[0] - 33, pl[1] - 372) <= 16, `正向时左爪应伸到左侧鼠标（${pl.map(Math.round)}）`);
     } finally {
-      await setSettings({ kbDir: 'reverse' }); // 断言失败也不能把 forward 带进后面的步骤
+      await setSettings({ kbDir: 'reverse', kbLayout: '100' }); // 断言失败也不能把 forward 带进后面的步骤
       await sleep(2200); // 等扑鼠标窗口结束、爪子归位
     }
     check((await js(pet, "document.body.dataset.kbDir")) === 'reverse', '没有切回反向');
@@ -338,7 +361,7 @@ async function runSelfTest(ctx) {
     await sleep(240);
     await shot(`${String(n++).padStart(2, '0')}-desk-transparent`);
     const t = await js(pet, "getComputedStyle(document.getElementById('pad')).display + '/' + getComputedStyle(document.getElementById('kb')).display");
-    check(t === 'none/block', `透明桌面应当保留键盘（${t}）`);
+    check(t === 'none/flex', `透明桌面应当保留键盘（${t}）`);
   });
   await step('pet-scale', async () => { // 整体大小：窗口和内容一起缩，右下角不动
     const before = pet.getBounds();

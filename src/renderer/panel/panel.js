@@ -11,7 +11,7 @@
     headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
     headScale: $('#headScale'), headScaleVal: $('#headScaleVal'), petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
     sfxVolume: $('#sfxVolume'), sfxVolumeVal: $('#sfxVolumeVal'),
-    switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
+    switchSound: $('#switchSound'), desk: $('#desk'), kbLayout: $('#kbLayout'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
     privacyStatus: $('#privacyStatus'), privacyReason: $('#privacyReason'), privacyCapabilities: $('#privacyCapabilities'),
     toast: $('#toast'),
     updVersion: $('#updVersion'), btnCheckUpdate: $('#btnCheckUpdate'), updStatus: $('#updStatus'),
@@ -199,6 +199,7 @@
     els.switchSound.title = s.keySfx && s.sfxOn !== false ? '' : s.sfxOn === false ? '「音效」开关已关闭' : '先勾选「键盘音效」才会出声';
     els.switchSound.value = s.switchSound;
     els.desk.value = s.desk;
+    els.kbLayout.value = s.kbLayout || '100';
     els.voiceName.textContent = d.meta.voiceName || '合成音效';
     els.voiceName.title = d.meta.voiceName
       ? `生气触发时播放导入配音：${d.meta.voiceName}`
@@ -301,6 +302,7 @@
   for (const c of $$('[data-key]')) bind(c, 'change', () => set({ [c.dataset.key]: c.checked }));
   bind(els.switchSound, 'change', () => set({ switchSound: els.switchSound.value }));
   bind(els.desk, 'change', () => set({ desk: els.desk.value }));
+  bind(els.kbLayout, 'change', () => set({ kbLayout: els.kbLayout.value }));
   for (const [input, label, key] of [[els.headScale, els.headScaleVal, 'headScale'], [els.petScale, els.petScaleVal, 'petScale'], [els.sfxVolume, els.sfxVolumeVal, 'sfxVolume']]) {
     bind(input, 'input', async () => {
       const value = Number(input.value);

@@ -97,7 +97,7 @@
     el.bell = el.torso.querySelector('#bell');
   }
 
-  // 方向只在这里维护，反向时鼠标摆在右侧；CSS 和伸爪目标共用布局。
+  // 方向与键盘配列只在这里维护；CSS 和伸爪目标共用布局。
   function applyLayout(s) {
     layout.dir = s.kbDir === 'forward' ? 'forward' : 'reverse';
     const turn = layout.dir === 'forward' ? 180 : 0;
@@ -107,7 +107,17 @@
     // 以屏幕前用户的视角：反向（默认）鼠标在右侧；正向：键盘转半圈朝向小猫，鼠标挪到左侧同样朝内
     layout.mouseSide = layout.dir === 'forward' ? 'L' : 'R';
     layout.mouse = PAW[layout.mouseSide].mouse;
-    invalidateKeys();
+    // 键盘图按配列重画；爪子锚点从真实 DOM 量出来，配列变了要重建
+    if (el.kbdBuiltLayout !== s.kbLayout) {
+      const kb = ART.keyboardSvg(cfg.meta.isMac, s.kbLayout);
+      el.kbd.innerHTML = kb.svg;
+      el.kbd.setAttribute('viewBox', `0 0 ${kb.w} ${kb.h}`);
+      el.kbd.setAttribute('width', '272');
+      el.kbd.setAttribute('height', String(Math.round(272 * kb.h / kb.w)));
+      el.kbdBuiltLayout = s.kbLayout;
+      el.kbdBuilt = true;
+      invalidateKeys();
+    }
   }
 
   // 自动隐私保护：shield = 闭眼并遮挡键盘、停掉一切输入映射和声音；hidden = 整窗由主进程隐藏。
@@ -203,7 +213,7 @@
         ? { ...s.headOffset } : { x: 0, y: 0 };
     }
     if (payload.privacy) applyPrivacy(payload.privacy);
-    if (!prev || prev.kbDir !== s.kbDir || prev.desk !== s.desk || prev.petScale !== s.petScale) applyLayout(s);
+    if (!prev || prev.kbDir !== s.kbDir || prev.desk !== s.desk || prev.petScale !== s.petScale || prev.kbLayout !== s.kbLayout) applyLayout(s);
     if (prev && prev.angryLine && !s.angryLine) clearSpeech();
     el.body.dataset.body = s.body;
     el.body.dataset.desk = s.desk;
@@ -211,11 +221,6 @@
     el.headAnim.style.cursor = s.headLock ? 'pointer' : 'move';
     el.body.classList.toggle('sticker', s.sticker);
     document.documentElement.style.setProperty('--hs', s.headScale);
-    if (!el.kbdBuilt) {
-      el.kbd.innerHTML = ART.keyboardSvg(payload.meta.isMac);
-      el.kbdBuilt = true;
-      invalidateKeys();
-    }
     if (!prev || prev.body !== s.body) buildBody();
     applyHeadMedia(payload);
     const voice = payload.meta.voiceSrc || '';
@@ -280,9 +285,13 @@
     for (const list of keyMap.values()) list.sort((a, b) => a.x - b.x);
   }
 
-  function kbCenterX() {
-    const r = el.kb.getBoundingClientRect();
-    return stagePoint(r.left + r.width / 2, r.top)[0];
+  // 左右爪分工：离哪只爪的基准键近就用哪只（与配列无关，小键盘/方向键自然归右爪）
+  function nearestHand(x) {
+    const home = pawHome('L');
+    const l = home === PAW.L.rest ? PAW.L.rest[0] : home[0];
+    const rl = pawHome('R');
+    const r = rl === PAW.R.rest ? PAW.R.rest[0] : rl[0];
+    return Math.abs(x - l) <= Math.abs(x - r) ? 'L' : 'R';
   }
 
   function pawHome(hand) {
@@ -356,7 +365,7 @@
     st.typing = Math.max(st.typing, 0.8);
     const hit = keyAnchor(name);
     if (hit) {
-      const p = paw[hit.x < kbCenterX() ? 'L' : 'R'];
+      const p = paw[nearestHand(hit.x)];
       p.tx = hit.x;
       p.ty = hit.y;
       p.press = 1;
@@ -387,7 +396,7 @@
     const hit = keyAnchor(ev.name);
     let hand;
     if (hit) {
-      hand = hit.x < kbCenterX() ? 'L' : 'R'; // 键在键盘左半边用左爪，右半边用右爪
+      hand = nearestHand(hit.x); // 离哪只爪的基准键近就用哪只
       const p = paw[hand];
       p.tx = hit.x;
       p.ty = hit.y;
@@ -915,5 +924,6 @@
   if (typeof window.pet.onPrivacy === 'function') window.pet.onPrivacy(applyPrivacy);
   window.pet.onInput(onInput);
   window.pet.onAction(onAction);
+  window.__pawDebug = (id) => { const p = paw[id === 'pawL' ? 'L' : 'R']; return [Math.round(p.x), Math.round(p.y + p.press * 3)]; };
   requestAnimationFrame(frame);
 })();

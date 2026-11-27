@@ -13,6 +13,15 @@ const KEY_CODES = {
   Meta: 3675, MetaRight: 3676, NumLock: 69,
   Backquote: 41, Minus: 12, Equal: 13, BracketLeft: 26, BracketRight: 27,
   Backslash: 43, Semicolon: 39, Quote: 40, Comma: 51, Period: 52, Slash: 53,
+  Print: 3639, Scroll: 70,
+  // 小键盘（含 NumLock 关闭时 mac 发的变体码，按对应主键处理）
+  Numpad0: 82, Numpad1: 79, Numpad2: 80, Numpad3: 81, Numpad4: 75,
+  Numpad5: 76, Numpad6: 77, Numpad7: 71, Numpad8: 72, Numpad9: 73,
+  NumpadAdd: 78, NumpadSubtract: 74, NumpadMultiply: 55, NumpadDecimal: 83,
+  NumpadDivide: 3637, NumpadEnter: 3612,
+  NumpadEnd: 61007, NumpadArrowDown: 61008, NumpadPageDown: 61009,
+  NumpadArrowLeft: 61003, NumpadArrowRight: 61005, NumpadHome: 60999,
+  NumpadArrowUp: 61000, NumpadPageUp: 61001, NumpadInsert: 61010, NumpadDelete: 61011,
 };
 'QWERTYUIOP'.split('').forEach((k, i) => { KEY_CODES[k] = 16 + i; });
 'ASDFGHJKL'.split('').forEach((k, i) => { KEY_CODES[k] = 30 + i; });
@@ -69,6 +78,14 @@ function nameMap(codes) {
     ['alt', 'Alt'], ['alt', 'AltRight'], ['meta', 'Meta'], ['meta', 'MetaRight'],
     ['`', 'Backquote'], ['-', 'Minus'], ['=', 'Equal'], ['[', 'BracketLeft'], [']', 'BracketRight'],
     ['\\', 'Backslash'], [';', 'Semicolon'], ["'", 'Quote'], [',', 'Comma'], ['.', 'Period'], ['/', 'Slash'], ['numlock', 'NumLock'],
+    ['print', 'Print'], ['scroll', 'Scroll'],
+    // 小键盘：数字与运算符；NumLock 关闭时的变体码归到对应主键
+    ...'0123456789'.split('').map((d) => [`num${d}`, `Numpad${d}`]),
+    ['numadd', 'NumpadAdd'], ['numsub', 'NumpadSubtract'], ['nummul', 'NumpadMultiply'],
+    ['numdot', 'NumpadDecimal'], ['numdiv', 'NumpadDivide'], ['numenter', 'NumpadEnter'],
+    ['end', 'NumpadEnd'], ['down', 'NumpadArrowDown'], ['pgdn', 'NumpadPageDown'],
+    ['left', 'NumpadArrowLeft'], ['right', 'NumpadArrowRight'], ['home', 'NumpadHome'],
+    ['up', 'NumpadArrowUp'], ['pgup', 'NumpadPageUp'], ['ins', 'NumpadInsert'], ['del', 'NumpadDelete'],
   ]) put(name, symbol);
   return map;
 }

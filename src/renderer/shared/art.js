@@ -124,38 +124,81 @@ ${eye(57)}${eye(103)}
 
   function capLabel(name, isMac) {
     if (/^[a-z]$/.test(name)) return name.toUpperCase();
+    if (/^num\d$/.test(name)) return name.slice(3);
     const table = isMac
-      ? { backspace: '⌫', tab: '⇥', caps: '⇪', enter: '↵', shift: '⇧', ctrl: '⌃', meta: '⌘', alt: '⌥', fn: 'fn', menu: '☰' }
-      : { backspace: '⌫', tab: 'Tab', caps: 'Caps', enter: 'Enter', shift: 'Shift', ctrl: 'Ctrl', meta: 'Win', alt: 'Alt', fn: 'Fn', menu: '☰' };
+      ? { backspace: '⌫', tab: '⇥', caps: '⇪', enter: '↵', shift: '⇧', ctrl: '⌃', meta: '⌘', alt: '⌥', fn: 'fn', menu: '☰', esc: 'esc', print: 'Prt', scroll: 'Scr', pause: '⏸', numlock: 'Num', numadd: '+', numsub: '-', nummul: '*', numdiv: '/', numdot: '.', numenter: '↵' }
+      : { backspace: '⌫', tab: 'Tab', caps: 'Caps', enter: 'Enter', shift: 'Shift', ctrl: 'Ctrl', meta: 'Win', alt: 'Alt', fn: 'Fn', menu: '☰', esc: 'Esc', print: 'Prt', scroll: 'Scr', pause: '⏸', numlock: 'Num', numadd: '+', numsub: '-', nummul: '*', numdiv: '/', numdot: '.', numenter: '↵' };
     return table[name] || name;
   }
 
-  function keyboardSvg(isMac) {
+  // 键盘配列：fRow 功能键排 / nav 编辑导航区 / arrows 方向键 / numpad 数字小键盘
+  const LAYOUTS = {
+    '100': { fRow: true, nav: true, arrows: true, numpad: true },  // 全尺寸（98% 配列键位相同，共用这张）
+    '80': { fRow: true, nav: true, arrows: true, numpad: false },  // 十字配列（无小键盘）
+    '75': { fRow: true, nav: false, arrows: true, numpad: false },
+    '65': { fRow: false, nav: false, arrows: true, numpad: false },
+    '60': { fRow: false, nav: false, arrows: false, numpad: false },
+  };
+
+  function keyboardSvg(isMac, layout = '100') {
+    const cfg = LAYOUTS[layout] || LAYOUTS['100'];
     const U = 19.4;
     const GAP = 1.7;
     const H = 17.7;
+    const rows = [];
+    if (cfg.fRow) rows.push([['esc', 1]].concat(Array.from({ length: 12 }, (_, i) => [`f${i + 1}`, 1])));
+    rows.push(...ROWS.map((r) => r.slice()));
+    if (cfg.arrows) { // 右 Shift 缩短让位，方向键 clustered 到最右
+      rows[rows.length - 2] = [['shift', 2.25], ['z', 1], ['x', 1], ['c', 1], ['v', 1], ['b', 1], ['n', 1], ['m', 1], [',', 1], ['.', 1], ['/', 1], ['shift', 1.75], [null, cfg.nav ? 3.5 : 1.5], ['up', 1]];
+      rows[rows.length - 1] = [['ctrl', 1.25], ['meta', 1.25], ['alt', 1.25], ['space', 7.75], ['alt', 1.25], [null, cfg.nav ? 2.75 : 1.75], ['left', 1], ['down', 1], ['right', 1]];
+    }
+    if (cfg.nav) { // 编辑导航区（3 列 × 3 行）
+      rows[1] = rows[1].concat([[null, 0.5], ['print', 1], ['scroll', 1], ['pause', 1]]);
+      rows[2] = rows[2].concat([[null, 0.5], ['ins', 1], ['home', 1], ['pgup', 1]]);
+      rows[3] = rows[3].concat([[null, 0.5], ['del', 1], ['end', 1], ['pgdn', 1]]);
+    }
+    if (cfg.numpad) { // 数字小键盘：每行右对齐到 23u（功能键行放 NumLock 排，底排留空）
+      const np = [
+        [['numlock', 1], ['numdiv', 1], ['nummul', 1], ['numsub', 1]],
+        [['num7', 1], ['num8', 1], ['num9', 1], ['numadd', 1]],
+        [['num4', 1], ['num5', 1], ['num6', 1], [null, 1]],
+        [['num1', 1], ['num2', 1], ['num3', 1], ['numenter', 1]],
+        [['num0', 2], ['numdot', 1], [null, 1]],
+        [],
+      ];
+      rows.forEach((r, i) => {
+        const used = r.reduce((s, [, u]) => s + (u || 0), 0);
+        r.push([null, Math.max(23 - used - 4, 0.25)], ...(np[i] || []));
+      });
+    }
+    const rowWidth = (r) => r.reduce((s, [, u]) => s + (u || 0), 0);
+    const maxU = Math.max(...rows.map(rowWidth));
+    const w = Math.round(maxU * U + 9);
+    const h = Math.round(5 + (rows.length - 1) * U + H + 9);
     let keys = '';
-    ROWS.forEach((row, r) => {
+    rows.forEach((row, r) => {
       let x = 5;
       const y = 5 + r * U;
       row.forEach(([name, units]) => {
-        const w = units * U - GAP;
+        if (!name) { x += units * U; return; }
+        const kw = units * U - GAP;
         const cls = name === 'space' ? ' key soft' : MODIFIERS.has(name) ? ' key accent' : ' key';
         const label = name === 'space' ? '' : capLabel(name, isMac);
         const font = label.length > 1 ? 5.6 : 6.6;
         keys += `<g class="${cls.trim()}" data-k="${name.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">`
-          + `<rect class="side" x="${x.toFixed(2)}" y="${(y + 2.1).toFixed(2)}" width="${w.toFixed(2)}" height="${H}" rx="3.4"/>`
-          + `<rect class="cap" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${H}" rx="3.4"/>`
-          + (label ? `<text x="${(x + w / 2).toFixed(2)}" y="${(y + H / 2 + font * 0.36).toFixed(2)}" font-size="${font}">${label.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>` : '')
+          + `<rect class="side" x="${x.toFixed(2)}" y="${(y + 2.1).toFixed(2)}" width="${kw.toFixed(2)}" height="${H}" rx="3.4"/>`
+          + `<rect class="cap" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${kw.toFixed(2)}" height="${H}" rx="3.4"/>`
+          + (label ? `<text x="${(x + kw / 2).toFixed(2)}" y="${(y + H / 2 + font * 0.36).toFixed(2)}" font-size="${font}">${label.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>` : '')
           + '</g>';
         x += units * U;
       });
     });
-    return `
-<rect class="sil" x="1" y="1" width="298" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="2"/>
-<rect class="kb-case" x="1" y="1" width="298" height="108" rx="11"/>
-<rect class="kb-plate" x="3.6" y="3.6" width="292.8" height="102.8" rx="8"/>${keys}`;
+    const svg = `
+<rect class="sil" x="1" y="1" width="${w - 2}" height="${h - 2}" rx="11" fill="#fff" stroke="#fff" stroke-width="2"/>
+<rect class="kb-case" x="1" y="1" width="${w - 2}" height="${h - 2}" rx="11"/>
+<rect class="kb-plate" x="3.6" y="3.6" width="${w - 7.2}" height="${h - 7.2}" rx="8"/>${keys}`;
+    return { svg, w, h };
   }
 
-  return { torsoMarkup, pawMarkup, cartoonHeadMarkup, keyboardSvg, tailPathD };
+  return { torsoMarkup, pawMarkup, cartoonHeadMarkup, keyboardSvg, tailPathD, KB_LAYOUTS: Object.keys(LAYOUTS) };
 }));

@@ -39,13 +39,23 @@ test('键盘图上没有的键有兜底位置，未知的返回 null', () => {
   assert.deepEqual(KEYS.fallbackAnchor('f1'), ['2', 0, -26]);
   assert.deepEqual(KEYS.fallbackAnchor('f12'), ['0', 0, -26]);
   assert.equal(KEYS.fallbackAnchor('up')[0], '/');
-  assert.equal(KEYS.fallbackAnchor('numpad5')[0], 'ctrl');
+  assert.deepEqual(KEYS.fallbackAnchor('num5'), ['5', 0, 0]); // 没画小键盘时，小键盘数字兜底到数字排
+  assert.equal(KEYS.fallbackAnchor('numadd'), null);
   assert.equal(KEYS.fallbackAnchor('whatever'), null);
   assert.equal(KEYS.fallbackAnchor(''), null);
   // 兜底位置的锚点键必须真的画在键盘上，否则爪子没地方去
-  const kbd = ART.keyboardSvg(false);
-  for (const [anchor] of Object.values(KEYS.ANCHORS)) assert.ok(kbd.includes(`data-k="${anchor}"`), `键盘上缺少锚点键 ${anchor}`);
-  assert.ok(kbd.includes('data-k="2"') && kbd.includes('data-k="0"'));
+  const kbd60 = ART.keyboardSvg(false, '60').svg;
+  for (const [anchor] of Object.values(KEYS.ANCHORS)) assert.ok(kbd60.includes(`data-k="${anchor}"`), `60% 键盘缺少锚点键 ${anchor}`);
+  assert.ok(kbd60.includes('data-k="2"') && kbd60.includes('data-k="0"'));
+  // 配列：100% 画出功能键排和数字小键盘，60% 没有；各配列尺寸合法
+  const kbd100 = ART.keyboardSvg(true, '100');
+  for (const k of ['num5', 'num0', 'numadd', 'numenter', 'f1', 'f12', 'up', 'pgdn', 'print']) assert.ok(kbd100.svg.includes(`data-k="${k}"`), `100% 键盘缺少 ${k}`);
+  const kbd80 = ART.keyboardSvg(false, '80').svg;
+  assert.ok(kbd80.includes('data-k="pgup"') && !kbd80.includes('data-k="num5"'), '80% 应有导航区但无小键盘');
+  for (const layout of ART.KB_LAYOUTS) {
+    const { w, h } = ART.keyboardSvg(false, layout);
+    assert.ok(w >= 300 && w <= 470 && h >= 100 && h <= 140, `${layout} 配列尺寸异常 ${w}x${h}`);
+  }
 });
 
 // ---------- 配音联动：有导入配音就播配音，否则合成音效（原声彩蛋已随「选视频」移除） ----------
@@ -161,9 +171,9 @@ test('猫身带实时计算的 S 形尾巴（含两只黄猫），人偶身没�
   assert.equal(ART.pawMarkup().split('class="bean"').length - 1, 4, '爪子上有四颗豆豆');
   for (const v of ['bluewhite', 'orange', 'cream']) assert.ok(ART.torsoMarkup(v).includes('clip-path='), `${v} 应有斑纹`);
   assert.equal(ART.torsoMarkup('black').includes('clip-path='), false, '黑猫不带斑纹');
-  assert.equal(ART.keyboardSvg(true).includes('⌘'), true, 'mac 键盘刻 ⌘');
-  assert.equal(ART.keyboardSvg(false).includes('Win'), true, 'Windows 键盘刻 Win');
-  const kbd = ART.keyboardSvg(false);
+  assert.equal(ART.keyboardSvg(true, '60').svg.includes('⌘'), true, 'mac 键盘刻 ⌘');
+  assert.equal(ART.keyboardSvg(false, '60').svg.includes('Win'), true, 'Windows 键盘刻 Win');
+  const kbd = ART.keyboardSvg(false, '60').svg;
   for (const ch of 'abcdefghijklmnopqrstuvwxyz0123456789') assert.ok(kbd.includes(`data-k="${ch}"`), `键盘缺少 ${ch}`);
   assert.equal(kbd.includes('flame'), false, '火焰动画已经去掉');
 });
