@@ -1,79 +1,152 @@
-/* 控制面板：所有改动都经主进程落盘，再广播给桌宠窗口。 */
+/* 控制面板：选项经主进程保存；隐私状态只采用主进程实际报告，不从开关推断。 */
 (function () {
   'use strict';
   const api = window.panel;
   const VOICE = window.BXC_VOICE;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-
   const els = {
-    hookChip: $('#hookChip'), fpsChip: $('#fpsChip'), fpsDot: $('#fpsDot'), fpsVal: $('#fpsVal'), modeVal: $('#modeVal'),
+    hookChip: $('#hookChip'), fpsDot: $('#fpsDot'), fpsVal: $('#fpsVal'), modeVal: $('#modeVal'),
     perm: $('#perm'), permText: $('#permText'), btnPermOpen: $('#btnPermOpen'), btnRetry: $('#btnRetry'),
-    btnHeadMode: $('#btnHeadMode'), headName: $('#headName'), btnFrenzy: $('#btnFrenzy'),
-    headScale: $('#headScale'), headScaleVal: $('#headScaleVal'),
-    petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
+    btnHeadMode: $('#btnHeadMode'), headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
+    headScale: $('#headScale'), headScaleVal: $('#headScaleVal'), petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
     switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
     voiceEaster: $('[data-key="voiceEaster"]'), easterWrap: $('#easterWrap'),
-    aboutText: $('#aboutText'), toast: $('#toast'),
+    privacyStatus: $('#privacyStatus'), privacyReason: $('#privacyReason'), privacyCapabilities: $('#privacyCapabilities'),
+    toast: $('#toast'),
   };
-  const state = { data: null, mode: '启动中', fps: 0, statusAt: 0 };
-  let logLoadVia = '';
+  const state = { data: null, privacy: null, mode: '启动中', fps: 0, statusAt: 0 };
 
   function toast(text) {
     els.toast.textContent = text;
     els.toast.classList.add('show');
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => els.toast.classList.remove('show'), 2600);
+    toast.timer = setTimeout(() => els.toast.classList.remove('show'), 4200);
   }
 
-  async function set(patch) {
-    state.data = await api.set(patch);
+  function errorText(error) {
+    return String(error && (error.message || error.error) || error || '未知错误');
+  }
+
+  // 所有异步 UI 操作（含同步抛错）统一收口，避免未处理的 Promise 拒绝。
+  async function run(task) {
+    try {
+      const result = await task();
+      if (result && result.error) throw new Error(errorText(result.error));
+      return result;
+    } catch (error) {
+      if (state.data) render();
+      toast(`操作失败：${errorText(error)}`);
+      return null;
+    }
+  }
+
+  function bind(element, event, task) {
+    element.addEventListener(event, (e) => run(() => task(e)));
+  }
+
+  function accept(payload) {
+    if (!payload || !payload.settings || !payload.meta) throw new Error('未收到有效的设置数据');
+    if (payload.error) throw new Error(errorText(payload.error));
+    state.data = payload;
+    if (Object.prototype.hasOwnProperty.call(payload, 'privacy')) state.privacy = payload.privacy;
     render();
   }
 
-  // 头像 × 原声彩蛋 × 导入配音 的联动规则（与桌宠共用同一份）
-  function rules(d) {
-    return VOICE.resolve({
-      headMode: d.settings.headMode, headType: d.meta.headType, voiceEaster: d.settings.voiceEaster, hasVoice: !!d.meta.voiceSrc,
-    });
+  async function set(patch) {
+    const payload = await api.set(patch);
+    if (payload && payload.error) throw new Error(errorText(payload.error));
+    accept(payload);
+  }
+
+  function pressed(button, on) {
+    button.classList.toggle('on', !!on);
+    button.setAttribute('aria-pressed', String(!!on));
+  }
+
+  function trustedValue(hook) {
+    if (typeof hook.trusted === 'boolean') return hook.trusted;
+    return typeof hook.axTrusted === 'boolean' ? hook.axTrusted : null;
+  }
+
+  function boolText(value) {
+    return value === true ? 'true（是）' : value === false ? 'false（否）' : 'unknown（未知）';
   }
 
   function renderHook() {
-    const { hook, meta } = state.data;
+    const { hook = {}, meta } = state.data;
     const mac = meta.isMac;
-    const appName = meta.dev ? 'Electron' : 'Cyberpet';
-    let text = '';
-    let cls = 'chip';
-    let banner = '';
-    if (hook.state === 'live') {
-      text = '✓ 键鼠已连接';
-      cls += ' ok';
-    } else if (hook.state === 'listening') {
-      text = mac && !hook.axTrusted ? '● 等待授权「辅助功能」' : '● 监听中';
-      cls += mac && !hook.axTrusted ? ' warn' : ' wait';
-      if (mac && !hook.axTrusted) {
-        banner = `macOS 需要授权「辅助功能」才能响应你的键盘鼠标：系统设置 → 隐私与安全性 → 辅助功能 → 打开「${appName}」。如果它已经开着，关一下再打开即可，程序会自动连上。`;
-      }
-    } else if (hook.state === 'error') {
-      text = '⚠ 键鼠监听未启用';
-      cls += ' warn';
-      banner = mac
-        ? `键鼠监听没能启动，通常是还没授权：系统设置 → 隐私与安全性 → 辅助功能 → 打开「${appName}」（已经开着就关一下再打开），然后点「重新检测」。`
-        : `键鼠监听启动失败：${hook.error || '未知错误'}`;
-    } else {
-      text = '⚠ 原生监听组件加载失败';
-      cls += ' warn';
-      banner = `键鼠监听组件没能加载${hook.error ? `（${hook.error}）` : ''}。请换一个安装包重装（例如 setup.exe / portable.exe 各试一次）；杀毒软件拦截 .node 文件也会导致这个问题。面板和「试试打字」等按钮仍可使用。`;
-      logLoadVia = hook.loadVia || '';
-    }
+    const trusted = trustedValue(hook);
+    const labels = {
+      live: ['键鼠已连接', 'ok'], listening: ['键鼠监听中', 'wait'], idle: ['键鼠监听未启动', 'wait'],
+      error: ['键鼠监听启动失败', 'warn'], unavailable: ['原生监听组件不可用', 'warn'],
+    };
+    let [text, cls] = labels[hook.state] || ['键鼠状态未知', 'warn'];
+    if (mac && trusted === false) { text += ' · 待授权'; cls = 'warn'; }
     els.hookChip.hidden = false;
-    els.hookChip.className = cls;
+    els.hookChip.className = `chip ${cls}`;
     els.hookChip.textContent = text;
-    els.permText.textContent = banner;
-    const showBanner = !!banner;
-    if (els.perm.hidden === showBanner) api.banner(showBanner);
-    els.perm.hidden = !showBanner;
+    const messages = [];
+    if (hook.state === 'unavailable') messages.push('原生监听组件未能加载，请查看下方实际错误与加载方式；这不等同于未授权。');
+    else if (hook.state === 'error') messages.push('键鼠监听启动失败，请结合诊断中的实际错误、加载方式及权限状态排查。');
+    else if (!labels[hook.state]) messages.push('尚未取得有效监听状态，可重新检测并查看诊断。');
+    if (mac) {
+      if (trusted === false) messages.push('辅助功能尚未授权：系统设置 → 隐私与安全性 → 辅助功能，选择与当前运行路径对应的应用。');
+      else if (trusted === null) messages.push('辅助功能授权状态 unknown，当前无法确认是否已授权。');
+      messages.push('当前为 ad-hoc 签名，换版后可能需要你在「辅助功能」中重新勾选当前应用，再点「重新检测」。更新不保证免授权，程序不会自动重置系统授权。');
+    }
+    els.permText.textContent = messages.join(' ');
+    els.perm.hidden = !messages.length;
     els.btnPermOpen.hidden = !mac;
+    // 权限条位于可滚动 main 中，不调用 banner 扩高窗口。
+    $('#diagExecPath').textContent = meta.execPath || 'unknown（主进程未提供运行路径）';
+    $('#diagInstalled').textContent = boolText(meta.isInstalled);
+    $('#diagHookState').textContent = hook.state || 'unknown';
+    $('#diagTrusted').textContent = boolText(trusted);
+    $('#diagLoadVia').textContent = hook.loadVia || 'unknown（未报告加载方式）';
+    $('#diagHookError').textContent = hook.error ? errorText(hook.error) : '未报告错误';
+  }
+
+  const CAPABILITY_NAMES = {
+    secureInput: '安全输入检测', fullscreen: '全屏检测', fullScreen: '全屏检测',
+    recording: '常见录屏软件检测', recordingApps: '常见录屏软件检测',
+    contentProtection: '系统内容保护',
+  };
+  function capabilityText(value) {
+    const status = value && typeof value === 'object' ? (value.status ?? value.available) : value;
+    if (status === true || status === 'available' || status === 'supported') return '可用';
+    if (status === false || status === 'unavailable' || status === 'unsupported') return '不可用';
+    return 'unknown（能力不可用或尚未确认）';
+  }
+
+  function renderPrivacy() {
+    const p = state.privacy;
+    const modes = { off: '保护已关闭', normal: '正常显示', shield: '闭眼 · 键盘已遮挡', hidden: '已自动隐藏' };
+    const valid = p && Object.prototype.hasOwnProperty.call(modes, p.mode);
+    const enabled = p && typeof p.enabled === 'boolean' ? p.enabled : null;
+    els.privacyStatus.textContent = valid ? `实际：${modes[p.mode]}` : '实际状态 unknown';
+    els.privacyStatus.className = `chip ${!valid ? 'warn' : p.mode === 'shield' || p.mode === 'hidden' ? 'ok' : 'wait'}`;
+    const reasons = {
+      'secure-input': '检测到系统安全输入', secureInput: '检测到系统安全输入',
+      fullscreen: '检测到全屏应用', 'full-screen': '检测到全屏应用',
+      recording: '检测到常见录屏软件运行', 'recording-app': '检测到常见录屏软件运行',
+      disabled: '自动隐私保护已关闭', normal: '未检测到需保护的场景',
+    };
+    const reason = p && p.reason ? (reasons[p.reason] || String(p.reason)) : '未报告原因';
+    els.privacyReason.textContent = p
+      ? `实际保护开关：${boolText(enabled)}；原因：${reason}。`
+      : '等待主进程报告；实际保护开关、模式和检测能力均为 unknown，不能确认已保护。';
+    const capabilities = p && p.capabilities && typeof p.capabilities === 'object' ? p.capabilities : {};
+    const keys = Object.keys(capabilities);
+    if (!keys.length) keys.push('secureInput', 'fullscreen', 'recording');
+    els.privacyCapabilities.replaceChildren();
+    for (const key of keys) {
+      const value = capabilities[key];
+      const item = document.createElement('li');
+      const reason = value && typeof value === 'object' && value.reason ? `；${String(value.reason)}` : '';
+      item.textContent = `${CAPABILITY_NAMES[key] || key}：${capabilityText(value)}${reason}`;
+      els.privacyCapabilities.appendChild(item);
+    }
   }
 
   function renderStatus() {
@@ -82,116 +155,94 @@
     els.fpsVal.textContent = fresh ? `${state.fps} FPS` : '-- FPS';
     els.modeVal.textContent = mode;
     els.fpsDot.style.background = { 暴走中: '#2f6fe0', 暴躁: '#ff8c00', 生气: '#ff5a3c', 活跃: '#22c55e', 待机: '#b5bccd' }[mode] || '#b5bccd';
-    els.btnFrenzy.classList.toggle('on', mode === '暴走中');
+    pressed(els.btnFrenzy, mode === '暴走中');
   }
 
   function render() {
     const d = state.data;
     if (!d) return;
     const s = d.settings;
-    const r = rules(d);
-    for (const b of $$('[data-body]')) b.classList.toggle('on', b.dataset.body === s.body);
-    els.btnHeadMode.classList.toggle('on', s.headMode === 'photo');
+    const r = VOICE.resolve({ headMode: s.headMode, headType: d.meta.headType, voiceEaster: s.voiceEaster, hasVoice: !!d.meta.voiceSrc });
+    for (const b of $$('[data-body]')) pressed(b, b.dataset.body === s.body);
+    for (const b of $$('[data-kb-dir]')) pressed(b, b.dataset.kbDir === (s.kbDir || 'reverse'));
+    pressed(els.btnHeadMode, s.headMode === 'photo');
+    pressed(els.btnAngryLine, s.angryLine === true);
     const kind = s.headMode === 'cartoon' ? 'Q 版猫头' : d.meta.headType === 'video' ? '视频' : '图片';
-    els.headName.textContent = `当前：${s.headMode === 'cartoon' ? kind : `${d.meta.headName}（${kind}）`}`;
+    els.headName.textContent = s.headMode === 'cartoon' ? `当前：${kind}` : `当前：${d.meta.headName || '默认头像'}（${kind}）`;
     els.headName.title = els.headName.textContent;
     els.headScale.value = s.headScale;
     els.headScaleVal.textContent = `${Math.round(s.headScale * 100)}%`;
     els.petScale.value = s.petScale;
     els.petScaleVal.textContent = `${Math.round(s.petScale * 100)}%`;
     for (const c of $$('[data-key]')) c.checked = !!s[c.dataset.key];
-
-    // 「原声彩蛋」只对视频头像可用；图片 / Q 版猫头时置灰
     els.voiceEaster.disabled = !r.easterEnabled;
     els.easterWrap.classList.toggle('off', !r.easterEnabled);
     els.voiceEaster.title = r.easterEnabled ? VOICE.EASTER_TITLE.video
       : (s.headMode === 'cartoon' ? VOICE.EASTER_TITLE.cartoon : VOICE.EASTER_TITLE.image);
-
-    // 轴体音色只在「键盘音效」开着时才有意义
+    els.easterWrap.title = els.voiceEaster.title;
     els.switchSound.disabled = !s.keySfx;
     els.switchSound.title = s.keySfx ? '' : '先勾选「键盘音效」才会出声';
     els.switchSound.value = s.switchSound;
     els.desk.value = s.desk;
-
-    // 现在到底会播哪一种配音
-    els.voiceName.textContent = r.source === 'video' ? '视频原声' : (d.meta.voiceName || '未导入');
+    els.voiceName.textContent = r.source === 'video' ? '视频原声' : (d.meta.voiceName || '合成音效');
     els.voiceName.title = r.source === 'video'
-      ? '触发时播放视频自带的原声' + (d.meta.voiceName ? '；取消「原声彩蛋」后会改播导入的配音' : '')
-      : (d.meta.voiceName ? `触发时播放：${d.meta.voiceName}` : '触发时用合成的低吼声；可以「导入配音」换成你自己的音频');
+      ? '触发时播放视频原声；关闭原声彩蛋后使用导入配音或合成音效'
+      : (d.meta.voiceName ? `触发时播放：${d.meta.voiceName}` : '触发时使用合成音效；可导入自己的音频');
     els.btnClearVoice.hidden = !d.meta.voiceName;
+    // 作者信息始终隐藏，不渲染主进程可能携带的名字、头像或链接。
+    $('#aboutRow').hidden = true;
+    $('#aboutText').textContent = '';
     renderHook();
+    renderPrivacy();
     renderStatus();
   }
 
-  // 选完文件立刻生效，并明确告诉用户换成了什么
   async function applyResult(request, okText) {
-    const d = await request();
-    if (!d) return;
-    if (d.error) { toast(d.error); return; }
-    state.data = d;
-    render();
-    toast(okText(d));
+    const payload = await request();
+    if (payload === null) return; // 选择媒体时取消是正常结果。
+    if (payload && payload.error) throw new Error(errorText(payload.error));
+    accept(payload);
+    toast(okText(payload));
   }
 
-  // ---------- 事件 ----------
-  for (const b of $$('[data-body]')) b.addEventListener('click', () => set({ body: b.dataset.body }));
-  for (const b of $$('[data-act]')) b.addEventListener('click', () => api.action(b.dataset.act));
-  els.btnFrenzy.addEventListener('click', () => api.action('frenzy'));
-  els.btnHeadMode.addEventListener('click', () => set({ headMode: state.data.settings.headMode === 'photo' ? 'cartoon' : 'photo' }));
-  $('#btnPickHead').addEventListener('click', () => applyResult(() => api.pickHead(), (d) => `已换成图片头像：${d.meta.headName}`));
-  $('#btnPickHeadVideo').addEventListener('click', () => applyResult(() => api.pickHeadVideo(), (d) => `已换成视频头像：${d.meta.headName}`));
-  $('#btnResetHead').addEventListener('click', () => applyResult(() => api.resetHead(), () => '已还原为默认头像'));
-  $('#btnResetHeadPos').addEventListener('click', () => set({ headOffset: null }).then(() => toast('头像位置已归位')));
-  for (const c of $$('[data-key]')) c.addEventListener('change', () => set({ [c.dataset.key]: c.checked }));
-  els.switchSound.addEventListener('change', () => set({ switchSound: els.switchSound.value }));
-  els.desk.addEventListener('change', () => set({ desk: els.desk.value }));
-  els.headScale.addEventListener('input', () => {
-    els.headScaleVal.textContent = `${Math.round(els.headScale.value * 100)}%`;
-    api.set({ headScale: Number(els.headScale.value) }).then((d) => { if (d) state.data = d; });
+  for (const b of $$('[data-body]')) bind(b, 'click', () => set({ body: b.dataset.body }));
+  for (const b of $$('[data-kb-dir]')) bind(b, 'click', () => set({ kbDir: b.dataset.kbDir }));
+  for (const b of $$('[data-act]')) bind(b, 'click', () => api.action(b.dataset.act));
+  bind(els.btnFrenzy, 'click', () => api.action('frenzy'));
+  bind(els.btnAngryLine, 'click', () => set({ angryLine: state.data.settings.angryLine !== true }));
+  bind(els.btnHeadMode, 'click', () => set({ headMode: state.data.settings.headMode === 'photo' ? 'cartoon' : 'photo' }));
+  bind($('#btnPickHead'), 'click', () => applyResult(() => api.pickHead(), (d) => `已换成图片头像：${d.meta.headName}`));
+  bind($('#btnPickHeadVideo'), 'click', () => applyResult(() => api.pickHeadVideo(), (d) => `已换成视频头像：${d.meta.headName}`));
+  bind($('#btnResetHead'), 'click', () => applyResult(() => api.resetHead(), () => '已还原为默认头像'));
+  bind($('#btnResetHeadPos'), 'click', async () => { await set({ headOffset: null }); toast('头像位置已归位'); });
+  for (const c of $$('[data-key]')) bind(c, 'change', () => set({ [c.dataset.key]: c.checked }));
+  bind(els.switchSound, 'change', () => set({ switchSound: els.switchSound.value }));
+  bind(els.desk, 'change', () => set({ desk: els.desk.value }));
+  for (const [input, label, key] of [[els.headScale, els.headScaleVal, 'headScale'], [els.petScale, els.petScaleVal, 'petScale']]) {
+    bind(input, 'input', async () => {
+      const value = Number(input.value);
+      label.textContent = `${Math.round(value * 100)}%`;
+      await set({ [key]: value });
+    });
+  }
+  bind($('#btnPickVoice'), 'click', () => applyResult(() => api.pickVoice(), (d) => `已导入配音：${d.meta.voiceName}`));
+  bind(els.btnClearVoice, 'click', () => applyResult(() => api.clearVoice(), () => '已清除导入的配音'));
+  bind(els.btnRetry, 'click', async () => {
+    const result = await api.retryHook();
+    // retryHook 返回的 hook.error 是诊断数据，不是 IPC 调用失败；仍须刷新并展示。
+    if (result && result.error && !result.state) throw new Error(errorText(result.error));
+    accept(await api.get());
   });
-  els.petScale.addEventListener('input', () => {
-    els.petScaleVal.textContent = `${Math.round(els.petScale.value * 100)}%`;
-    api.set({ petScale: Number(els.petScale.value) }).then((d) => { if (d) state.data = d; });
-  });
-  $('#btnPickVoice').addEventListener('click', () => applyResult(() => api.pickVoice(), (d) => `已导入配音：${d.meta.voiceName}`));
-  els.btnClearVoice.addEventListener('click', () => applyResult(() => api.clearVoice(), () => '已清除导入的配音'));
-  els.btnRetry.addEventListener('click', async () => {
-    await api.retryHook();
-    state.data = await api.get();
-    render();
-  });
-  els.btnPermOpen.addEventListener('click', () => api.openPermissionSettings());
-  $('#btnCollapse').addEventListener('click', () => api.collapse());
-  // ⌘V / Ctrl+V：剪贴板里有图就直接贴成脑袋
-  document.addEventListener('keydown', (e) => {
+  bind(els.btnPermOpen, 'click', () => api.openPermissionSettings());
+  bind($('#btnCollapse'), 'click', () => api.collapse());
+  bind(document, 'keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'v') {
       e.preventDefault();
-      applyResult(() => api.pasteHead(), (d) => `已贴成头像：${d.meta.headName}`);
+      return applyResult(() => api.pasteHead(), (d) => `已贴成头像：${d.meta.headName}`);
     }
   });
 
-  // 作者信息：渲染成可点的链接
-  function renderAbout(author) {
-    els.aboutRow.hidden = author ? false : true;
-    if (!author) { els.aboutText.textContent = ''; return; }
-    const parts = [];
-    if (author.name) parts.push(`<b>${author.name}</b>`);
-    if (author.douyinId) parts.push(`<a href="#" data-url="${author.douyin}">抖音 @${author.douyinId}</a>`);
-    if (author.site) parts.push(`<a href="#" data-url="${author.site}">粉丝站</a>`);
-    if (author.github) parts.push(`<a href="#" data-url="${author.github}">GitHub</a>`);
-    if (author.gitee) parts.push(`<a href="#" data-url="${author.gitee}">Gitee</a>`);
-    els.aboutText.innerHTML = parts.join(' · ');
-    for (const a of els.aboutText.querySelectorAll('a')) {
-      a.addEventListener('click', (ev) => { ev.preventDefault(); api.openUrl(a.dataset.url); });
-    }
-  }
-
-  api.onSettings((payload) => {
-    if (!payload) return;
-    state.data = payload;
-    render();
-    if (payload.meta.author) renderAbout(payload.meta.author);
-  });
+  api.onSettings((payload) => { if (payload) run(() => accept(payload)); });
   api.onStatus((s) => {
     if (!s) return;
     state.mode = s.mode;
@@ -199,10 +250,11 @@
     state.statusAt = Date.now();
     renderStatus();
   });
-
-  api.get().then((payload) => {
-    state.data = payload;
-    render();
-    if (payload && payload.meta.author) renderAbout(payload.meta.author);
-  });
+  if (typeof api.onPrivacy === 'function') {
+    api.onPrivacy((privacy) => {
+      state.privacy = privacy && Object.prototype.hasOwnProperty.call(privacy, 'privacy') ? privacy.privacy : privacy;
+      renderPrivacy();
+    });
+  }
+  run(async () => accept(await api.get()));
 })();

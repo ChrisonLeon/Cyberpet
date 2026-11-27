@@ -134,18 +134,30 @@ async function runSelfTest(ctx) {
     check(dist(await js(pet, PAW_CENTER('pawL')), await js(pet, KEY_CENTER('a'))) <= 6, '按住不放时爪子应当停在 A 上');
   });
 
-  await step('knock', async () => { // 敲一下脑袋 → 台词
-    mouse('mouseMove', 214, 150);
-    await sleep(60);
-    mouse('mouseDown', 214, 150);
-    await sleep(60);
-    mouse('mouseUp', 214, 150);
-    await sleep(220);
-    const fired = await js(pet, "document.getElementById('speech').classList.contains('show') && document.body.classList.contains('angry')");
+  await step('knock', async () => { // 敲一下脑袋 → 暴躁（台词是独立开关，默认关）
+    const knock = async () => {
+      mouse('mouseMove', 214, 150);
+      await sleep(60);
+      mouse('mouseDown', 214, 150);
+      await sleep(60);
+      mouse('mouseUp', 214, 150);
+      await sleep(220);
+    };
+    await js(pet, "document.getElementById('speech').classList.remove('show'); 1");
+    await knock();
     await shot('03-knock');
-    check(fired, '敲脑袋没有触发台词');
+    check(await js(pet, "document.body.classList.contains('angry')"), '敲脑袋没有触发暴躁');
+    check(await js(pet, "!document.getElementById('speech').classList.contains('show')"), '台词开关关闭时不应显示台词');
     check(await js(pet, "document.querySelector('.flame') === null"), '不应该再有火焰动画元素');
-    await sleep(3000);
+    await setSettings({ angryLine: true }); // 打开独立台词开关
+    await sleep(200);
+    await js(pet, "document.getElementById('speech').classList.remove('show'); 1");
+    await knock();
+    check(await js(pet, "document.getElementById('speech').classList.contains('show')"), '台词开关打开后敲脑袋应显示台词');
+    check((await js(pet, "document.getElementById('speechText').textContent")).includes('能别放屁吗'), '台词内容不对');
+    await shot('03-knock-line');
+    await setSettings({ angryLine: false });
+    await sleep(2600);
   });
 
   await step('petting', async () => { // 按住脑袋滑动 → 冒爱心（锁定状态下拖头=摸头）
@@ -193,6 +205,63 @@ async function runSelfTest(ctx) {
     const p = await js(pet, PAW_CENTER('pawL'));
     check(Math.hypot(p[0] - 33, p[1] - 372) <= 14, `左爪没有伸到鼠标上（${p.map(Math.round)}）`);
   });
+
+  await step('mouse-press', async () => { // 左右键按下反馈：按住持续高亮，松开恢复
+    hook.inject({ kind: 'mousedown', button: 1 });
+    await sleep(120);
+    check(await js(pet, "document.body.classList.contains('mx-l') && !document.body.classList.contains('mx-r')"), '左键按住应标记 mx-l');
+    await shot('05-mouse-l');
+    hook.inject({ kind: 'mousedown', button: 2 });
+    await sleep(120);
+    check(await js(pet, "document.body.classList.contains('mx-l') && document.body.classList.contains('mx-r')"), '右键按住应同时标记 mx-r');
+    hook.inject({ kind: 'mouseup', button: 1 });
+    hook.inject({ kind: 'mouseup', button: 2 });
+    await sleep(120);
+    check(await js(pet, "!document.body.classList.contains('mx-l') && !document.body.classList.contains('mx-r')"), '松开后应清除按压标记');
+  });
+
+  await step('kbdir-forward', async () => { // 正向：键盘翻转、鼠标挪到右侧，右爪去抓
+    await setSettings({ kbDir: 'forward' });
+    await sleep(400);
+    const l = JSON.parse(await js(pet, "JSON.stringify({ dir: document.body.dataset.kbDir,"
+      + " kbT: getComputedStyle(document.getElementById('kb')).transform,"
+      + " mouseLeft: Math.round(document.getElementById('deskmouse').getBoundingClientRect().left) })"));
+    check(l.dir === 'forward', `方向没有切到 forward（${l.dir}）`);
+    check(l.mouseLeft > 250, `正向时鼠标应在右侧（left=${l.mouseLeft}）`);
+    await shot('05-kbdir-forward');
+    sendAction('mouse-demo');
+    await sleep(800);
+    const pr = await js(pet, PAW_CENTER('pawR'));
+    check(Math.hypot(pr[0] - 361, pr[1] - 372) <= 16, `正向时右爪应伸到右侧鼠标（${pr.map(Math.round)}）`);
+    // 键盘转半圈后，P 键的视觉位置到了左半边：负责它的爪子也随之换成左爪
+    await expectPawOn('p', 'pawL');
+    await setSettings({ kbDir: 'reverse' });
+    await sleep(400);
+    check((await js(pet, "document.body.dataset.kbDir")) === 'reverse', '没有切回反向');
+    await sleep(2200);
+  });
+
+  await step('privacy-shield', async () => { // 自动隐私保护：开启 → 遮蔽；期间输入被拦；关闭恢复
+    const before = await js(pet, "document.querySelectorAll('.kcap').length");
+    const on = await setSettings({ privacy: true });
+    check(on.privacy && on.privacy.enabled === true, `隐私开关没有生效（${JSON.stringify(on.privacy)}）`);
+    await sleep(1500); // 等探测器启动并输出
+    const state = (await setSettings({})).privacy; // 空补丁：拿当前实时状态
+    check(['shield', 'normal'].includes(state.mode), `开启后应为 shield 或 normal（${state.mode}）`);
+    const covered = await js(pet, "document.body.classList.contains('privacy')");
+    check(covered === (state.mode === 'shield'), `遮蔽标记与实际状态不符（${state.mode}）`);
+    await shot('08-privacy');
+    if (state.mode === 'shield') {
+      key('z'); // 遮蔽期间注入的按键不应变成气泡
+      await sleep(200);
+      const after = await js(pet, "document.querySelectorAll('.kcap').length");
+      check(after === before, `遮蔽期间按键不应显示（${before}→${after}）`);
+    }
+    const off = await setSettings({ privacy: false });
+    check(off.privacy.mode === 'off', `关闭后应回到 off（${off.privacy.mode}）`);
+    check((await js(pet, "!document.body.classList.contains('privacy')")) === true, '关闭后应移除遮蔽标记');
+    await sleep(200);
+  });
   await step('pat', async () => { sendAction('pat'); await sleep(260); await shot('06-pat'); });
   await step('frenzy', async () => {
     sendAction('frenzy');
@@ -203,7 +272,7 @@ async function runSelfTest(ctx) {
   });
 
   let n = 10;
-  for (const body of ['black', 'bluewhite', 'doll', 'orange', 'cream']) {
+  for (const body of ['black', 'bluewhite', 'orange', 'cream']) {
     for (const headMode of ['photo', 'cartoon']) {
       if (body === 'black' && headMode === 'photo') continue;
       await step(`look-${body}-${headMode}`, async () => {
@@ -362,7 +431,7 @@ async function runSelfTest(ctx) {
     await sleep(1500);
   });
 
-  await step('voice-easter-off-rage', async () => { // 视频头像 + 取消彩蛋 + 有导入配音：沉默暴躁（不播音、不显示台词）
+  await step('voice-easter-off-rage', async () => { // 视频头像 + 取消彩蛋 + 有导入配音：播配音，视频无声动画同步，不显示台词
     if (!hasFixtures) throw new SkipError();
     await setSettings({ voiceEaster: false });
     await sleep(200);
@@ -371,7 +440,8 @@ async function runSelfTest(ctx) {
     await sleep(300);
     const s = await voiceState();
     const sp = await js(pet, "document.getElementById('speech').classList.contains('show')");
-    check(s.videoMuted === true && !played(s) && !sp, `取消彩蛋应为沉默暴躁（${JSON.stringify(s)} speech=${sp}）`);
+    check(played(s), `取消彩蛋应改播导入配音（${JSON.stringify(s)}）`);
+    check(s.videoMuted === true && !sp, `视频应保持静音、台词不应显示（${JSON.stringify(s)} speech=${sp}）`);
     await sleep(900);
   });
 
@@ -463,7 +533,9 @@ async function runSelfTest(ctx) {
       + " about: document.getElementById('aboutText').textContent })"));
     summary.panel = a;
     check(a.dirs === 0, '素材目录配置应当已经去掉');
-    check((await js(panel, "document.querySelectorAll('[data-body]').length")) === 5, '应当有 5 种身子');
+    check((await js(panel, "document.querySelectorAll('[data-body]').length")) === 4, '应当有 4 种身子（人偶身已删除）');
+    check((await js(panel, "document.querySelectorAll('[data-kb-dir]').length")) === 2, '应当有正向/反向两个键鼠方向按钮');
+    check((await js(panel, "!!document.getElementById('privacyStatus')")) === true, '应当有隐私实际状态显示');
     check((await js(panel, "!!document.getElementById('petScale')")) === true, '应当有整体大小滑块');
     check((await js(panel, "!!document.querySelector('[data-key=\"headLock\"]')")) === true, '应当有锁定头像位置复选框');
     check(a.easterDisabled === true && a.off === true, '图片头像时「原声彩蛋」应当置灰不可点');

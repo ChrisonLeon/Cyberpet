@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('pet', {
     ipcRenderer.send('pet:ready');
   },
   onInput: (cb) => ipcRenderer.on('input', (_e, ev) => cb(ev)),
+  onPrivacy: (cb) => ipcRenderer.on('privacy', (_e, s) => cb(s)),
   onAction: (cb) => ipcRenderer.on('action', (_e, name) => cb(name)),
   setIgnore: (ignore) => ipcRenderer.send('pet:ignore', !!ignore),
   moveBy: (dx, dy) => ipcRenderer.send('pet:moveBy', { dx, dy }),

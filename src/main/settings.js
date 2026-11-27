@@ -3,13 +3,15 @@ const fs = require('fs');
 const path = require('path');
 
 const DEFAULTS = {
-  body: 'black',        // black 小黑猫身 | bluewhite 蓝白小猫身 | doll 卫衣人偶身
+  body: 'black',        // black 小黑猫身 | bluewhite 蓝白小猫身 | orange 橘猫身 | cream 奶黄猫身
   headMode: 'cartoon',  // cartoon Q版猫头（默认）| photo 真人抠头（图片或视频）
   head: null,           // null = 内置默认头像，否则是 userData/heads 下的绝对路径
   headScale: 1.1,
   headOffset: null,     // 头像相对默认位置的偏移 {x, y}
   headLock: false,      // 锁定头像位置：锁定后不能拖动头像
   petScale: 1.0,        // 整体大小（窗口 + 内容一起缩放）
+  angryLine: false,     // 「能别放屁吗」台词开关：选中后触发时在头上显示台词；未选中只暴躁敲键盘
+  kbDir: 'reverse',     // 键鼠方向：reverse 反向（默认，现在的方向）| forward 正向（键盘朝向宠物自己，鼠标在右）
   sticker: true,        // 贴纸白边
   keyBubbles: true,     // 按键气泡
   keySfx: true,         // 键盘音效
@@ -27,15 +29,17 @@ const DEFAULTS = {
   lastAudioDir: null,
   petPos: null,
   panelPos: null,
+  installChecked: false, // macOS：已在「应用程序」目录或用户已拒绝移动提示
 };
 
 const ENUMS = {
-  body: ['black', 'bluewhite', 'doll', 'orange', 'cream'],
+  body: ['black', 'bluewhite', 'orange', 'cream'],
   headMode: ['photo', 'cartoon'],
   switchSound: ['mahjong', 'blue', 'woodfish', 'kitten'],
   desk: ['transparent', 'bluewhite', 'dark', 'none'],
+  kbDir: ['reverse', 'forward'],
 };
-const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock'];
+const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock', 'angryLine', 'installChecked'];
 const PATHS = ['head', 'voice', 'lastImageDir', 'lastVideoDir', 'lastAudioDir'];
 
 function isPos(v) {

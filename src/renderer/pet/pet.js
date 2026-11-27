@@ -35,12 +35,13 @@
   const springSquash = makeSpring(2.6, 0.54, 0.7, 1.35);
   const springTail = makeSpring(1.6, 0.5, -40, 40);
   const springTailTip = makeSpring(3.2, 0.4, -55, 55);
+  springSquash.x = 1; // 挤压围绕 1 呼吸，不能从 0 起步或套用对称限幅
 
 
   // 肩膀在身子两侧偏下；爪子平时停在基准键上，打字时移到对应的键
   const PAW = {
     L: { shoulder: [160, 288], mouse: [33, 372], homeKeys: ['f', 'g'], rest: [186, 344] },
-    R: { shoulder: [268, 288], homeKeys: ['h', 'j'], rest: [254, 344] },
+    R: { shoulder: [268, 288], homeKeys: ['h', 'j'], rest: [254, 344], mouse: [361, 372] },
   };
   const DEMO_KEYS = 'baixiaochun'.split('');
   const ANGRY_LINE = '「能别放屁吗!」';
@@ -57,8 +58,15 @@
     speech: $('#speech'), speechText: $('#speechText'), voice: $('#voice'),
   };
 
-  const sfx = new Sfx();
+  let sfx = new Sfx();
   const cfg = { settings: null, meta: null, headSrc: '', offset: { x: 0, y: 0 } };
+  const layout = { dir: 'reverse', mouse: PAW.L.mouse, mouseSide: 'L' };
+  const heldKeys = new Map(); // 键名 → 首次按下时的视觉锚点，repeat 不在左右修饰键间跳动
+  const mouseHeld = new Set(); // uiohook：1 左键、2 右键；与 DOM 的 0 / 2 不同
+  let privacy = { enabled: false, mode: 'off' };
+  const inputStopped = () => privacy.mode === 'shield' || privacy.mode === 'hidden';
+  let voiceEpoch = 0;
+  let voiceMetadata = null;
   const paw = {
     L: { x: PAW.L.rest[0], y: PAW.L.rest[1], tx: PAW.L.rest[0], ty: PAW.L.rest[1], press: 0, lastKey: -9, reach: 0 },
     R: { x: PAW.R.rest[0], y: PAW.R.rest[1], tx: PAW.R.rest[0], ty: PAW.R.rest[1], press: 0, lastKey: -9, reach: 0 },
@@ -71,7 +79,7 @@
     happyUntil: -9, lastInputAt: -9,
     petTilt: 0, lastSfx: -9, lastBubble: -9, lastHeart: -9, lastMeow: -9, lastPatLine: -9, lastTailKick: -9,
     combo: [], voiceUntil: -9,
-    rageUntil: -9, rageT0: -9, // 暴躁模式：未勾选「原声彩蛋」时，触发台词的场合改为疯狂击打键盘
+    rageUntil: -9, rageT0: -9, synthUntil: -9, // 暴躁动作、台词和声源互相独立
     fidget: null, // 闲时小动作：歪头 / 张望 / 抖耳朵 / 伸懒腰 / 挪窝
     fx: { lookX: 0, stretchY: 0, shiftX: 0, earWig: 0, tilt: 0 },
   };
@@ -89,29 +97,69 @@
     el.bell = el.torso.querySelector('#bell');
   }
 
-  // 头像互斥：图片 / 视频 / Q版猫头，任何时刻只有一个在显示
+  // 方向只在这里维护，鼠标仍留在左侧；CSS 和伸爪目标共用布局。
+  function applyLayout(s) {
+    layout.dir = s.kbDir === 'forward' ? 'forward' : 'reverse';
+    const turn = layout.dir === 'forward' ? 180 : 0;
+    el.body.dataset.kbDir = layout.dir;
+    el.stage.style.setProperty('--kb-turn', `${turn}deg`);
+    el.stage.style.setProperty('--mouse-turn', `${turn}deg`);
+    // 正向：键盘转半圈朝向小猫，鼠标挪到右侧同样朝内；反向：维持现在的样子
+    layout.mouseSide = layout.dir === 'forward' ? 'R' : 'L';
+    layout.mouse = PAW[layout.mouseSide].mouse;
+    invalidateKeys();
+  }
+
+  // 自动隐私保护：shield = 闭眼并遮挡键盘、停掉一切输入映射和声音；hidden = 整窗由主进程隐藏。
+  // 状态只来自主进程探测结论，渲染层不从设置推断。
+  function applyPrivacy(state) {
+    if (!state || typeof state !== 'object') return;
+    const wasStopped = inputStopped();
+    const mode = state.mode === 'shield' || state.mode === 'hidden' ? state.mode
+      : state.mode === 'normal' ? 'normal' : 'off';
+    privacy = { enabled: state.enabled === true, mode };
+    const stopped = inputStopped();
+    el.body.classList.toggle('privacy', stopped);
+    if (stopped) {
+      el.speech.classList.remove('show');
+      el.bubbles.replaceChildren();
+      el.hearts.replaceChildren();
+      clearKeyboard();
+      mouseHeld.clear();
+      el.body.classList.remove('mx-l', 'mx-r');
+      stopAudio();
+    } else if (wasStopped && cfg.settings && cfg.settings.headMode === 'photo' && cfg.meta.headType === 'video') {
+      const v = el.headVideo; // 恢复后视频回到首帧，等下一次触发再播
+      if (v.paused) { v.muted = true; try { v.currentTime = 0; } catch { /* 元数据未就绪 */ } }
+    }
+  }
+
+  // 头像互斥：比较真实 src，图片 A → 视频 → 图片 A 也必须重新装回图片。
   function applyHeadMedia(payload) {
-    const isVideo = payload.meta.headType === 'video';
-    el.body.dataset.media = payload.meta.headType;
-    if (isVideo) {
-      const src = payload.meta.headSrc;
-      if ((el.headVideo.getAttribute('src') || '') !== src) {
-        el.headVideo.muted = true;
-        st.voiceUntil = -9;
-        el.headVideo.src = src;
-        el.headVideo.play().catch(() => {});
+    const m = payload.meta;
+    const v = el.headVideo;
+    el.body.dataset.media = m.headType;
+    cfg.headSrc = m.headSrc;
+    if (m.headType === 'video') {
+      const srcChanged = (v.getAttribute('src') || '') !== m.headSrc;
+      if (srcChanged) {
+        v.muted = true;
+        v.src = m.headSrc;
+        v.load();
       }
       el.headImg.removeAttribute('src');
       el.headGhost.removeAttribute('src');
+      // 视频头像是「静态立绘」：停在首帧；台词/暴躁触发时才播一次（playOriginal / playVideoOnce）
+      if (v.paused) {
+        v.muted = true;
+        try { v.currentTime = 0; } catch { /* 元数据未就绪 */ }
+      }
     } else {
-      el.headVideo.pause();
-      el.headVideo.removeAttribute('src');
-      el.headVideo.muted = true;
-      st.voiceUntil = -9;
-      if (cfg.headSrc !== payload.meta.headSrc) {
-        cfg.headSrc = payload.meta.headSrc;
-        el.headImg.src = cfg.headSrc;
-        el.headGhost.src = cfg.headSrc;
+      v.pause();
+      v.muted = true;
+      if (v.getAttribute('src')) { v.removeAttribute('src'); v.load(); }
+      for (const img of [el.headImg, el.headGhost]) {
+        if (img.getAttribute('src') !== m.headSrc) img.src = m.headSrc;
       }
     }
   }
@@ -124,9 +172,20 @@
     const s = payload.settings;
     const prev = cfg.settings;
     const prevMeta = cfg.meta;
+    const m = payload.meta;
+    const mediaChanged = prev && (prev.headMode !== s.headMode || prevMeta.headType !== m.headType || prevMeta.headSrc !== m.headSrc);
+    const audioChanged = prev && (mediaChanged || prev.voiceEaster !== s.voiceEaster || prevMeta.voiceSrc !== m.voiceSrc);
+    if (prev && prev.headLock !== s.headLock) { headMove = null; press = null; st.petTilt = 0; }
+    if (audioChanged) stopAudio();
     cfg.settings = s;
-    cfg.meta = payload.meta;
-    cfg.offset = (s.headOffset && Number.isFinite(s.headOffset.x)) ? { ...s.headOffset } : { x: 0, y: 0 };
+    cfg.meta = m;
+    if (!headMove) {
+      cfg.offset = s.headOffset && Number.isFinite(s.headOffset.x) && Number.isFinite(s.headOffset.y)
+        ? { ...s.headOffset } : { x: 0, y: 0 };
+    }
+    if (payload.privacy) applyPrivacy(payload.privacy);
+    if (!prev || prev.kbDir !== s.kbDir || prev.desk !== s.desk || prev.petScale !== s.petScale) applyLayout(s);
+    if (prev && prev.angryLine && !s.angryLine) clearSpeech();
     el.body.dataset.body = s.body;
     el.body.dataset.desk = s.desk;
     el.body.dataset.head = s.headMode;
@@ -136,7 +195,7 @@
     if (!el.kbdBuilt) {
       el.kbd.innerHTML = ART.keyboardSvg(payload.meta.isMac);
       el.kbdBuilt = true;
-      keyMap = null;
+      invalidateKeys();
     }
     if (!prev || prev.body !== s.body) buildBody();
     applyHeadMedia(payload);
@@ -146,7 +205,11 @@
       else { el.voice.removeAttribute('src'); el.voice.load(); }
     }
     // 「原声彩蛋」刚对视频头像生效时（勾选，或换了视频），先从头播一遍让大家听到
-    if (prev && voiceSource(s, payload.meta) === 'video' && voiceSource(prev, prevMeta) !== 'video') playOriginal();
+    if (!inputStopped() && prev && voiceSource(s, m) === 'video'
+      && (voiceSource(prev, prevMeta) !== 'video' || prevMeta.headSrc !== m.headSrc)) {
+      stopAudio(); // 预览也只允许一个声源，不能叠着旧配音或合成音播放
+      playOriginal();
+    }
   }
 
   el.headImg.addEventListener('error', () => {
@@ -158,42 +221,72 @@
     }
   });
   // 视频打不开（文件被删、格式不支持）：告诉主进程换回内置头，别留一个黑框
-  el.headVideo.addEventListener('error', () => window.pet.headBroken());
+  el.headVideo.addEventListener('error', () => {
+    const v = el.headVideo;
+    const m = cfg.meta;
+    if (!m || m.headType !== 'video' || v.getAttribute('src') !== m.headSrc) return;
+    if (!v.error || v.error.code === 1 || (v.currentSrc && v.currentSrc !== m.headSrc)) return;
+    stopAudio();
+    window.pet.headBroken();
+  });
 
   // ---------- 键盘上每个键的位置（舞台坐标）----------
   let keyMap = null; // 键名 → [{ x, y, node }]
 
+  function clearKeyboard() {
+    heldKeys.clear();
+    for (const node of el.kbd.querySelectorAll('.key')) {
+      clearTimeout(node.upTimer);
+      node.classList.remove('down');
+    }
+  }
+
+  function invalidateKeys() {
+    clearKeyboard();
+    keyMap = null;
+    for (const p of Object.values(paw)) { p.lastKey = -9; p.press = 0; }
+  }
+
+  function stagePoint(x, y) {
+    const r = el.stage.getBoundingClientRect();
+    return [(x - r.left) * 394 / (r.width || 394), (y - r.top) * 430 / (r.height || 430)];
+  }
+
   function buildKeyMap() {
     keyMap = new Map();
-    if (getComputedStyle(el.kb).display === 'none') return;
-    const origin = el.stage.getBoundingClientRect();
+    if (inputStopped() || getComputedStyle(el.kb).display === 'none') return;
     for (const node of el.kbd.querySelectorAll('.key')) {
-      const r = node.getBoundingClientRect();
+      const r = node.querySelector('.cap').getBoundingClientRect();
       if (r.width < 2 || r.height < 2) continue;
       const name = node.dataset.k;
+      const [x, y] = stagePoint(r.left + r.width / 2, r.top + r.height / 2);
       if (!keyMap.has(name)) keyMap.set(name, []);
-      keyMap.get(name).push({ x: r.left - origin.left + r.width / 2, y: r.top - origin.top + r.height / 2, node });
+      keyMap.get(name).push({ x, y, node });
     }
+    for (const list of keyMap.values()) list.sort((a, b) => a.x - b.x);
   }
 
   function kbCenterX() {
     const r = el.kb.getBoundingClientRect();
-    return r.left + r.width / 2;
+    return stagePoint(r.left + r.width / 2, r.top)[0];
   }
 
   function pawHome(hand) {
-    if (!keyMap || keyMap.size === 0) return PAW[hand].rest;
-    const [a, b] = PAW[hand].homeKeys.map((k) => (keyMap.get(k) || [])[0]);
-    return a && b ? [(a.x + b.x) / 2, a.y] : PAW[hand].rest;
+    if (!keyMap) buildKeyMap();
+    if (!keyMap.size) return PAW[hand].rest;
+    const homes = ['f', 'g', 'h', 'j'].map((k) => (keyMap.get(k) || [])[0]).filter(Boolean).sort((a, b) => a.x - b.x);
+    const [a, b] = hand === 'L' ? homes.slice(0, 2) : homes.slice(-2);
+    return a && b ? [(a.x + b.x) / 2, (a.y + b.y) / 2] : PAW[hand].rest;
   }
 
   // 某个键在画面上的位置；键盘图上没有的键（F 键、方向键…）落到兜底区域，找不到就返回 null
   function keyAnchor(name) {
+    if (heldKeys.has(name)) return heldKeys.get(name);
     if (!keyMap) buildKeyMap();
     if (!keyMap || keyMap.size === 0) return null;
     const list = keyMap.get(name);
     if (list && list.length) {
-      // Shift / Ctrl / Alt 左右各一个：用另一只手去按
+      // 已按视觉 x 排序，旋转后的 Shift / Ctrl / Alt 也用另一只手，不依赖 DOM 顺序
       return list.length > 1 && st.lastHand === 'L' ? list[list.length - 1] : list[0];
     }
     const fb = KEYS.fallbackAnchor(name);
@@ -201,25 +294,41 @@
       const anchors = keyMap.get(fb[0]);
       if (anchors && anchors.length) {
         const a = anchors[anchors.length - 1];
-        return { x: a.x + fb[1], y: a.y + fb[2], node: null };
+        const direction = layout.dir === 'forward' ? -1 : 1;
+        return { x: a.x + direction * fb[1], y: a.y + direction * fb[2], node: null };
       }
     }
     return null;
   }
 
-  window.addEventListener('resize', () => { keyMap = null; });
+  window.addEventListener('resize', invalidateKeys);
 
   // ---------- 输入 ----------
   function onInput(ev) {
-    if (!ev) return;
-    // 系统级的松手：哪怕是在窗口外松的，也把拖动 / 按压收尾
+    if (!ev || !cfg.settings || inputStopped()) return; // 隐私期间不读取、更不保存 name / label
     if (ev.kind === 'mousedown' || ev.kind === 'mouseup') {
-      if (ev.kind === 'mouseup' && ev.button === 1) release();
+      if (ev.button !== 1 && ev.button !== 2) return;
+      st.lastInputAt = st.t;
+      if (ev.kind === 'mousedown') mouseHeld.add(ev.button);
+      else mouseHeld.delete(ev.button);
+      // 左右键各自独立：按住持续高亮 + 键帽下压，松开恢复（CSS 完成，窗口外松手也能收尾）
+      el.body.classList.toggle('mx-l', mouseHeld.has(1));
+      el.body.classList.toggle('mx-r', mouseHeld.has(2));
       return;
     }
-    if (ev.kind === 'keyup') return;
+    if (ev.kind === 'keyup') {
+      const hit = heldKeys.get(ev.name);
+      heldKeys.delete(ev.name);
+      if (hit && hit.node && ![...heldKeys.values()].some((a) => a && a.node === hit.node)) {
+        clearTimeout(hit.node.upTimer);
+        hit.node.classList.remove('down');
+      }
+      return;
+    }
     if (ev.kind === 'key') {
       if (ev.repeat) { holdKey(ev.name); return; } // 按住不放：爪子停在键上反复按，但不连冒气泡、连响
+      if (heldKeys.size >= 32) clearKeyboard();
+      heldKeys.set(ev.name, keyAnchor(ev.name));
       onKey(ev);
       return;
     }
@@ -282,7 +391,7 @@
     if (s.keyBubbles && (now - st.lastBubble > 0.05)) {
       spawnBubble(ev.label, hit ? [hit.x, hit.y - 8] : [p.x, p.y - 10]);
     }
-    if (s.keySfx) {
+    if (s.keySfx && st.voiceUntil < now && el.voice.paused && st.synthUntil < now) {
       const gap = st.frenzy ? 0.075 : 0.032;
       if (now - st.lastSfx >= gap) {
         st.lastSfx = now;
@@ -307,11 +416,14 @@
   function pressNode(node) {
     node.classList.add('down');
     clearTimeout(node.upTimer);
-    node.upTimer = setTimeout(() => node.classList.remove('down'), 110);
+    node.upTimer = setTimeout(() => {
+      if (![...heldKeys.values()].some((a) => a && a.node === node)) node.classList.remove('down');
+    }, 110);
   }
 
   // ---------- 动作 ----------
   function onAction(name) {
+    if (!cfg.settings || inputStopped()) return;
     if (name === 'type-demo') { st.demoUntil = st.t + 2.8; st.demoIdx = 0; }
     else if (name === 'frenzy') { st.frenzy = !st.frenzy; st.demoUntil = -9; st.acc = 0; }
     else if (name === 'mouse-demo') st.mouseDemoUntil = st.t + 2.8;
@@ -319,23 +431,61 @@
     else if (name === 'angry') angry();
   }
 
-  // 视频头像的原声：从头播一遍（带声音），播完自动静音
+  function stopAudio() {
+    voiceEpoch++;
+    if (voiceMetadata) el.headVideo.removeEventListener('loadedmetadata', voiceMetadata);
+    voiceMetadata = null;
+    st.voiceUntil = st.synthUntil = -9;
+    el.headVideo.muted = true;
+    el.voice.pause();
+    try { el.voice.currentTime = 0; } catch { /* 尚未加载 */ }
+    // audio.js 无 stop API：断开输出并关闭旧 Context，连已排期的合成声也不会在恢复时重放。
+    if (sfx.master) sfx.master.disconnect();
+    if (sfx.ctx && sfx.ctx.state !== 'closed') sfx.ctx.close().catch(() => {});
+    sfx = new Sfx();
+  }
+
+  // 视频头像的原声：从头播一遍（带声音），播完自动静音。
   function playOriginal() {
+    if (inputStopped() || voiceSource(cfg.settings, cfg.meta) !== 'video') return false;
     const v = el.headVideo;
+    const epoch = voiceEpoch;
+    const src = v.getAttribute('src');
     try {
       v.muted = false;
       v.currentTime = 0;
-      v.play().catch(() => {});
+      v.play().catch(() => { if (epoch === voiceEpoch) v.muted = true; });
       const dur = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
-      if (dur > 0) {
-        st.voiceUntil = st.t + dur;
-      } else {
-        // 刚换上的视频元数据还没到、拿不到时长：先按 3 秒兜底，时长一到就改按真实时长收尾
-        st.voiceUntil = st.t + 3;
-        v.addEventListener('loadedmetadata', () => {
-          if (st.voiceUntil > 0 && !v.muted && Number.isFinite(v.duration)) st.voiceUntil = st.t + v.duration;
-        }, { once: true });
+      st.voiceUntil = st.t + (dur || 3);
+      if (!dur) {
+        voiceMetadata = () => {
+          voiceMetadata = null;
+          if (epoch === voiceEpoch && src === v.getAttribute('src') && !inputStopped() && !v.muted
+            && Number.isFinite(v.duration) && v.duration > 0) st.voiceUntil = st.t + v.duration;
+        };
+        v.addEventListener('loadedmetadata', voiceMetadata, { once: true });
       }
+      return true;
+    } catch {
+      v.muted = true;
+      return false;
+    }
+  }
+
+  // 视频头像的「动一下」：无声播一次后停回首帧。带声音的版本是 playOriginal。
+  function playVideoOnce() {
+    if (inputStopped() || !cfg.meta || cfg.meta.headType !== 'video') return false;
+    const v = el.headVideo;
+    const epoch = voiceEpoch;
+    try {
+      v.muted = true;
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      v.addEventListener('ended', () => {
+        if (epoch !== voiceEpoch) return;
+        v.pause();
+        try { v.currentTime = 0; } catch { /* 已重置 */ }
+      }, { once: true });
       return true;
     } catch {
       return false;
@@ -343,7 +493,7 @@
   }
 
   function playVoice() {
-    if (!el.voice.getAttribute('src')) return false;
+    if (inputStopped() || !el.voice.getAttribute('src')) return false;
     try {
       el.voice.currentTime = 0;
       el.voice.dataset.tried = '1'; // 发起过播放（自测用：没有声卡的环境里 play() 会被拒绝，但功能是通的）
@@ -358,21 +508,21 @@
     const now = st.t;
     st.lastAngerAt = now;
     const s = cfg.settings;
-    // 触发「能别放屁吗」：两种状态都会逐渐暴躁、疯狂击打键盘
+    // 「能别放屁吗」触发：逐渐暴躁 → 自动疯狂击打键盘（速度越打越快），两种状态都有
     st.angryUntil = now + 2.6;
     st.rageUntil = now + 2.6;
     st.rageT0 = now;
-    springTailTip.kick(10);
-    springSquash.kick(0.1);
-    if (s.voiceEaster) {
-      // 打开「原声彩蛋」：额外在头上显示台词，并播放对应声音（视频原声 / 导入配音 / 合成）
-      say(ANGRY_LINE, 2700, 'fire');
-      const src = voiceSource(s, cfg.meta);
+    springTailTip.kick(8);
+    springSquash.kick(0.08);
+    // 台词只在选中「能别放屁吗」时显示；声音独立：视频头像+原声彩蛋=原声，否则导入配音，都没有=合成
+    if (s.angryLine) say(ANGRY_LINE, 2700, 'fire');
+    const src = voiceSource(s, cfg.meta);
+    if (cfg.meta.headType === 'video' && s.headMode === 'photo') {
       if (src === 'video') playOriginal();
-      else if (src === 'voice') playVoice();
-      else sfx.angry();
+      else playVideoOnce(); // 无声动画与配音/合成音同步
     }
-    // 关闭状态：沉默地暴躁，只有键盘声
+    if (src === 'voice') playVoice();
+    else if (src !== 'video') sfx.angry();
   }
 
   function pat(x, y) {
@@ -401,13 +551,17 @@
   }
 
   let speechTimer = 0;
+  function clearSpeech() {
+    clearTimeout(speechTimer);
+    el.speech.classList.remove('show');
+  }
   function say(text, ms, kind) {
     el.speechText.textContent = text;
     el.speech.classList.toggle('soft', kind === 'soft');
     el.speech.classList.toggle('fire', kind === 'fire');
     el.speech.classList.add('show');
     clearTimeout(speechTimer);
-    speechTimer = setTimeout(() => el.speech.classList.remove('show'), ms);
+    speechTimer = setTimeout(clearSpeech, ms);
   }
 
   function spawnHearts(x, y, n) {
@@ -583,6 +737,7 @@
     st.petTilt = press && press.petting ? st.petTilt : st.petTilt * Math.max(0, 1 - dt * 10);
     if (st.voiceUntil > 0 && t > st.voiceUntil) {
       el.headVideo.muted = true;
+      if (!el.headVideo.paused) { el.headVideo.pause(); try { el.headVideo.currentTime = 0; } catch { /* 已重置 */ } }
       st.voiceUntil = -9;
     }
 
@@ -616,11 +771,11 @@
       const onKeyNow = t - p.lastKey <= 0.9;
       let tx = onKeyNow ? p.tx : home[0];
       let ty = onKeyNow ? p.ty : home[1];
-      const wantReach = hand === 'L' && reaching && t - p.lastKey > 0.35 ? st.reach : 0;
+      const wantReach = hand === layout.mouseSide && reaching && t - p.lastKey > 0.35 ? st.reach : 0;
       p.reach += (wantReach - p.reach) * (1 - Math.exp(-dt * 12));
       if (p.reach > 0.001) {
-        tx = lerp(tx, PAW.L.mouse[0], p.reach);
-        ty = lerp(ty, PAW.L.mouse[1], p.reach);
+        tx = lerp(tx, layout.mouse[0], p.reach);
+        ty = lerp(ty, layout.mouse[1], p.reach);
       }
       const k = 1 - Math.exp(-dt * 34);
       p.x += (tx - p.x) * k;
@@ -708,9 +863,9 @@
     const L = paw.L;
     const R = paw.R;
     const ly = L.y + L.press * 3 + L.reach * 2.5 * Math.sin(t * 34);
-    const ry = R.y + R.press * 3;
+    const ry = R.y + R.press * 3 + R.reach * 2.5 * Math.sin(t * 34);
     el.pawL.setAttribute('transform', `translate(${L.x.toFixed(2)} ${ly.toFixed(2)}) rotate(${(-38 * L.reach).toFixed(1)})`);
-    el.pawR.setAttribute('transform', `translate(${R.x.toFixed(2)} ${ry.toFixed(2)})`);
+    el.pawR.setAttribute('transform', `translate(${R.x.toFixed(2)} ${ry.toFixed(2)}) rotate(${(38 * R.reach).toFixed(1)})`);
     armPath(el.armLEdge, PAW.L.shoulder, L.x, ly);
     armPath(el.armREdge, PAW.R.shoulder, R.x, ry);
     armPath(el.armL, PAW.L.shoulder, L.x, ly);
@@ -752,6 +907,7 @@
   window.addEventListener('error', (e) => console.error('渲染层报错:', e.message));
 
   window.pet.onSettings(applySettings);
+  if (typeof window.pet.onPrivacy === 'function') window.pet.onPrivacy(applyPrivacy);
   window.pet.onInput(onInput);
   window.pet.onAction(onAction);
   requestAnimationFrame(frame);

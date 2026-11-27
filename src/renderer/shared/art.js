@@ -7,53 +7,38 @@
   'use strict';
 
   const TORSO_PATH = 'M14 114 C 4 70, 26 18, 80 14 C 134 18, 156 70, 146 114 C 122 122, 38 122, 14 114 Z';
-  const DOLL_PATH = 'M34 118 L 34 54 C 34 30, 52 18, 80 18 C 108 18, 126 30, 126 54 L 126 118 Z';
-  // 尾巴和身子画在同一张 SVG 里、共用一层白色贴纸底，接口处才不会断开。
-  // S 形：从身子右下伸出，先向右再扬起，末端向右勾。坐标是身子的 viewBox 单位。
-  // 尾巴：单一连续曲线，每帧按两个弹簧角度实时重建路径——
-  // 没有两段刚体的接缝，任何角度组合下轮廓都是平滑的。
-  // 几何（torso viewBox 坐标）：尾根 (126,98)，静止方向 角度（度），段长
-  const TAIL_ROOT = [118, 88];  // 装在背部，远离键盘（键盘上沿在 stage y≈318）
-  const TAIL_REST = { base: -26, tip: -74 }; // 静止方向：向右上扬再折向竖直，呈 S 形
-  const TAIL_LEN = { base: 60, tip: 50 };
-
-  function smooth01(x) {
-    const t = Math.min(1, Math.max(0, x));
-    return t * t * (3 - 2 * t);
-  }
+  // 尾巴和身子共用 SVG / 贴纸底。两段设计贝塞尔在接点共用竖直切线，始终向上呈 S 形。
+  // 所有控制点都在 [16.5,223.5] × [16.5,115.5] 内：凸包性质保证最宽 33 的圆头描边不出界。
+  const TAIL_ROOT = [118, 88];
 
   /**
-   * 计算尾巴路径。baseDeg / tipDeg 分别是尾根段、尾尖段相对静止方向的摆角（度）。
-   * 返回 { d, dTip }：d 是整条尾巴的中心线（Catmull-Rom 转贝塞尔），dTip 是最后
-   * 一小段（双色尾巴的浅色尾尖，和 d 共用同一几何，所以接口处永远平滑）。
+   * baseDeg / tipDeg 是弹簧摆角（度），不是弧度，也不是绝对朝向。
+   * 有限输入钳制到 ±40° / ±70°，非有限输入按静止处理；三角函数只接收转换后的弧度。
+   * 返回兼容的 { d, dTip, root }，以及原始 segments，便于真正检查几何而非搜 NaN 字符串。
    */
-  function tailPathD(baseDeg, tipDeg) {
-    const rad = (deg) => (deg * Math.PI) / 180;
-    // 输入钳制（双保险）：无论调用方传多大，几何永远在安全范围内、永远平滑
-    baseDeg = Math.min(40, Math.max(-40, baseDeg));
-    tipDeg = Math.min(70, Math.max(-70, tipDeg));
-    const a1 = TAIL_REST.base + rad(baseDeg);
-    const a2 = TAIL_REST.tip + rad(baseDeg + tipDeg);
-    const pts = [];
-    const N = 10;
-    for (let i = 0; i <= N; i++) {
-      const s = i / N;
-      const bend = smooth01((s - 0.42) / 0.16); // 只在关节附近过渡两种角度，两端保持纯方向
-      const ang = a1 + (a2 - a1) * bend;
-      const len = s <= 0.5 ? TAIL_LEN.base * (s / 0.5) : TAIL_LEN.base + TAIL_LEN.tip * ((s - 0.5) / 0.5);
-      pts.push([TAIL_ROOT[0] + Math.cos(ang) * len, TAIL_ROOT[1] + Math.sin(ang) * len]);
-    }
-    const toD = (list) => {
-      let out = `M${list[0][0].toFixed(1)} ${list[0][1].toFixed(1)}`;
-      for (let i = 0; i < list.length - 1; i++) {
-        const p0 = list[Math.max(0, i - 1)], p1 = list[i], p2 = list[i + 1], p3 = list[Math.min(list.length - 1, i + 2)];
-        const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
-        const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
-        out += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
-      }
-      return out;
-    };
-    return { d: toD(pts), dTip: toD(pts.slice(-4)), root: TAIL_ROOT };
+  function tailPathD(baseDeg = 0, tipDeg = 0) {
+    const angle = (value, limit) => Number.isFinite(value) ? Math.min(limit, Math.max(-limit, value)) : 0;
+    const rad = (deg) => deg * Math.PI / 180;
+    baseDeg = angle(baseDeg, 40);
+    tipDeg = angle(tipDeg, 70);
+    const b = Math.sin(rad(baseDeg)) / Math.sin(rad(40));
+    const t = Math.sin(rad(tipDeg)) / Math.sin(rad(70));
+    const join = [178 + 8 * b, 60 + 3 * b + 3 * t];
+    const end = [join[0] + 28 + 6 * t, 26 + 4 * t];
+    const segments = [
+      [TAIL_ROOT.slice(), [148 + 6 * b, 88], [join[0], join[1] + 20], join],
+      [join, [join[0], join[1] - 20], [join[0] + 12 + 3 * t, end[1]], end],
+    ];
+    // de Casteljau 精确截取末段，浅色尾尖直接复用同一曲线的控制点，不重新拟合。
+    const mix = (a, c) => a.map((v, i) => v + (c[i] - v) * 0.55);
+    const [p0, p1, p2, p3] = segments[1];
+    const a = mix(p0, p1), c = mix(p1, p2), e = mix(p2, p3);
+    const ac = mix(a, c), ce = mix(c, e);
+    const tipSegments = [[mix(ac, ce), ce, e, p3]];
+    const point = (p) => `${p[0].toFixed(3)} ${p[1].toFixed(3)}`;
+    const toD = (curves) => `M${point(curves[0][0])}`
+      + curves.map((s) => ` C ${point(s[1])}, ${point(s[2])}, ${point(s[3])}`).join('');
+    return { d: toD(segments), dTip: toD(tipSegments), root: TAIL_ROOT.slice(), segments, tipSegments };
   }
 
   const BELL = `
@@ -65,20 +50,6 @@
 </g>`;
 
   function torsoMarkup(variant) {
-    if (variant === 'doll') {
-      return `
-<defs>
-  <linearGradient id="torsoShade" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="var(--fur-hi)"/><stop offset="1" stop-color="var(--fur)"/>
-  </linearGradient>
-</defs>
-<g class="sil"><path d="${DOLL_PATH}" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></g>
-<path d="${DOLL_PATH}" fill="url(#torsoShade)"/>
-<path class="hood" d="M46 44 Q 80 14 114 44 Q 80 31 46 44 Z"/>
-<path class="pocket" d="M58 70 Q 80 63 102 70 L 100 96 Q 80 100 60 96 Z"/>
-<path class="string" d="M68 42 q -2 9 -1 15"/><path class="string" d="M92 42 q 2 9 1 15"/>
-<circle class="aglet" cx="67" cy="58" r="1.8"/><circle class="aglet" cx="93" cy="58" r="1.8"/>`;
-    }
     return `
 <defs>
   <radialGradient id="torsoShade" cx="38%" cy="26%" r="95%">

@@ -35,11 +35,7 @@ body[data-body="cream"] {
   --whisk: #c9ae86; --nose: #ff8fab; --eye: #79c7ff; --ear-in: #ffcfe0; --mouth: #b08d5f; --blush-o: .8;
   --tail: #f7d9ad; --tail-tip: #fff8e9; --tail-hi: #fff3dd;
 }
-body[data-body="doll"] {
-  --fur: #2a2932; --fur-hi: #3f3e4a; --fur-line: #5a596b; --patch: transparent; --arm: #2a2932; --arm-edge: rgba(255, 255, 255, .85);
-  --paw: #fdfdfd; --paw-line: rgba(255, 255, 255, .45);
-  --whisk: #9a99a6; --nose: #ff9db5; --eye: #e9f76a; --ear-in: #6b4a5c; --mouth: #f4f4f8; --blush-o: .5;
-}
+
 
 /* ---------- 舞台布局（394 × 430）---------- */
 #stage { position: relative; width: 394px; height: 430px; }
@@ -59,12 +55,10 @@ body[data-desk="none"] #pad, body[data-desk="none"] #kb, body[data-desk="none"] 
 #torso .collar { fill: none; stroke: var(--collar); stroke-width: 9; stroke-linecap: round; }
 #torso .collar-hi { fill: none; stroke: var(--collar-hi); stroke-width: 2; stroke-linecap: round; opacity: .75; }
 #torso .bell-slit { fill: none; stroke: #b9800a; stroke-width: 1.6; stroke-linecap: round; }
-body[data-body="doll"] #tailSil, body[data-body="doll"] #tailColor, body[data-body="doll"] #tailTipC { display: none; }
-#torso .hood { fill: var(--fur-line); }
-#torso .pocket { fill: var(--fur); stroke: var(--fur-line); stroke-width: 1.6; stroke-linejoin: round; }
 #bell { transform-origin: 80px 45px; }
 
-#kb { left: 84px; top: 318px; width: 272px; height: 100px; transform-origin: 50% 0; transform: perspective(580px) rotateX(44deg); }
+#kb { left: 84px; top: 318px; width: 272px; height: 100px; transform-origin: 50% 50%;
+  transform: perspective(580px) rotateX(44deg) rotate(var(--kb-turn, 0deg)); }
 #kbd { display: block; }
 #kbd .kb-case { fill: #2b3140; }
 #kbd .kb-plate { fill: #3a4152; }
@@ -84,15 +78,22 @@ body[data-desk="dark"] #kbd .key .side { fill: #0b0d13; }
 body[data-desk="dark"] #kbd .key .cap { fill: #39415a; }
 body[data-desk="dark"] #kbd .key text { fill: #dfe6f5; }
 
-#deskmouse { left: 4px; top: 338px; transform: rotate(-12deg); transform-origin: 50% 60%; }
+#deskmouse { left: 4px; top: 338px; transform: rotate(calc(-12deg + var(--mouse-turn, 0deg))); transform-origin: 50% 60%; }
+body[data-kb-dir="forward"] #deskmouse { left: 333px; }
 #deskmouse .m-body { fill: #fbfcff; stroke: #3a4152; stroke-width: 2; }
 #deskmouse .m-split { fill: none; stroke: #c3cbdb; stroke-width: 1.5; stroke-linecap: round; }
 #mouseWheel { fill: #5b96ff; stroke: #3a4152; stroke-width: 1.2; transform-box: fill-box; transform-origin: 50% 50%; }
+#deskmouse .m-btn {
+  fill: #5b96ff; opacity: 0; pointer-events: none;
+  transform-box: fill-box; transform-origin: 50% 100%;
+  transition: opacity .09s linear, transform .09s ease-out;
+}
+body.mx-l #mouseBtnL, body.mx-r #mouseBtnR { opacity: .42; transform: scaleY(.9); }
 body[data-desk="dark"] #deskmouse .m-body { fill: #2b3140; stroke: #0f1219; }
 body[data-desk="dark"] #deskmouse .m-split { stroke: #1c202c; }
 body.reach #deskmouse { animation: mouseWiggle .2s ease-in-out infinite; }
 body.reach #mouseWheel { animation: wheelSpin .32s linear infinite; }
-@keyframes mouseWiggle { 0%, 100% { transform: rotate(-12deg) translateX(0); } 50% { transform: rotate(-9deg) translateX(3px); } }
+@keyframes mouseWiggle { 0%, 100% { transform: rotate(calc(-12deg + var(--mouse-turn, 0deg))) translateX(0); } 50% { transform: rotate(calc(-9deg + var(--mouse-turn, 0deg))) translateX(3px); } }
 @keyframes wheelSpin { from { transform: scaleY(1); } 50% { transform: scaleY(.2); } to { transform: scaleY(1); } }
 
 #fore { left: 0; top: 0; pointer-events: none; }
@@ -211,3 +212,16 @@ body.frenzy #streaks { display: block; }
 
 /* 卡通耳朵（闲时抖耳朵用） */
 #headCartoon .ear { transform-box: fill-box; transform-origin: 50% 92%; }
+
+/* ---------- 自动隐私保护（状态由主进程广播，body.privacy 只表示「遮蔽中」） ---------- */
+#privacyBadge {
+  display: none; position: absolute; left: 84px; top: 284px; width: 272px; text-align: center;
+  padding: 5px 0; border-radius: 10px; background: rgba(15, 18, 25, .88); color: #dfe6f5;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .04em; pointer-events: none;
+}
+body.privacy #privacyBadge { display: block; }
+body.privacy #kb { filter: brightness(.22) saturate(.4); }
+body.privacy #deskmouse { filter: brightness(.45) saturate(.5); }
+body.privacy #headCartoon .eye { animation: none; transform: scaleY(.08) !important; }
+body.privacy #headImg, body.privacy #headGhost, body.privacy #headVideo { filter: brightness(.4) saturate(.6); }
+body.privacy #speech, body.privacy .kcap, body.privacy .heart { display: none !important; }

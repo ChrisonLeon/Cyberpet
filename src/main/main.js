@@ -8,6 +8,7 @@ const fsp = fs.promises;
 const { pathToFileURL } = require('url');
 const { SettingsStore } = require('./settings');
 const { InputHook } = require('./hooks');
+const { PrivacyController } = require('./privacy-controller');
 const { labelFor } = require('../shared/keys');
 const { importFile } = require('./importer');
 
@@ -49,6 +50,8 @@ if (REAL_PLATFORM === 'win32') app.setAppUserModelId('top.baixiaochun.pet');
 let store = null;
 let settings = null;
 let hook = null;
+let privacyCtl = null;
+let privacyHidden = false; // 录屏/全屏期间被自动隐藏；恢复时按用户自己的显隐选择还原
 let petWin = null;
 let panelWin = null;
 let tray = null;
@@ -60,6 +63,13 @@ let petStatus = { fps: 0, mode: '启动中' };
 let assetsDir = '';
 let rendererDir = '';
 let userDataDir = '';
+
+// 单实例锁以 productName 命名：开发 / 冒烟若与打包版共用「Cyberpet」，打包版运行时这里会静默退出。
+// 在申请锁之前就把 userData 分开：打包版 = Cyberpet，开发 = Cyberpet-dev，冒烟 = 独立测试目录。
+if (!app.isPackaged && !SELFTEST_DIR) {
+  app.setPath('userData', path.join(app.getPath('appData'), 'Cyberpet-dev'));
+}
+if (SELFTEST_DIR) app.setPath('userData', path.resolve(SELFTEST_DIR) + '-profile');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -98,6 +108,49 @@ function keepAlive(win, name) {
 
 function fileExists(file) {
   return !!file && typeof file === 'string' && fs.existsSync(file);
+}
+
+// macOS 打包版：从「应用程序」以外的位置启动时，提示移入后再继续。
+// 授权绑定的是具体应用路径，固定位置能让「辅助功能」里的勾选持续有效；不自动重置、不静默覆盖。
+async function ensureInstalledLocation() {
+  if (!IS_MAC || !app.isPackaged || SELFTEST_DIR) return;
+  if (settings.installChecked) return;
+  if (typeof app.isInApplicationsFolder === 'function' && app.isInApplicationsFolder()) {
+    store.set({ installChecked: true });
+    return;
+  }
+  const r = await dialog.showMessageBox({
+    type: 'question',
+    title: `${APP_TITLE} 安装`,
+    message: '要把 Cyberpet 移入「应用程序」文件夹吗？',
+    detail: '放在「应用程序」里，键鼠监听所需的辅助功能授权更稳定；以后从启动台打开的也始终是同一个应用。',
+    buttons: ['移入应用程序', '暂不移动，继续运行'],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  }).catch(() => ({ response: 1 }));
+  if (r.response !== 0) {
+    store.set({ installChecked: true }); // 用户拒绝过就不再每次打扰
+    return;
+  }
+  let moved = false;
+  try { moved = app.moveToApplicationsFolder(); } catch { moved = false; }
+  if (moved) {
+    store.set({ installChecked: true });
+    // 当前进程是从旧路径启动的，二进制已被搬走：交给用户从新位置重新打开
+    await dialog.showMessageBox({
+      type: 'info', title: APP_TITLE, message: '已移入「应用程序」',
+      detail: '本次启动即将退出。请从「应用程序」或启动台重新打开 Cyberpet，然后第一次使用键盘前在系统设置里完成辅助功能授权。',
+      buttons: ['知道了'], noLink: true,
+    }).catch(() => {});
+    app.exit(0);
+    return;
+  }
+  await dialog.showMessageBox({
+    type: 'info', title: APP_TITLE, message: '没有完成移动',
+    detail: '「应用程序」里可能已有同名版本。已保留当前副本继续运行；建议手动整理后从「应用程序」中的版本启动，以免授权绑定到不同路径。',
+    buttons: ['知道了'], noLink: true,
+  }).catch(() => {});
 }
 
 function defaultPetPos() {
@@ -315,6 +368,8 @@ function meta() {
     voiceName: voice ? strip(voice) : '',
     version: app.getVersion(),
     dev: !app.isPackaged,
+    execPath: process.execPath,
+    isInstalled: IS_MAC && typeof app.isInApplicationsFolder === 'function' ? app.isInApplicationsFolder() : true,
   };
 }
 
@@ -328,7 +383,7 @@ function hookInfo() {
 }
 
 function payload() {
-  return { settings, meta: meta(), hook: hookInfo() };
+  return { settings, meta: meta(), hook: hookInfo(), privacy: privacyCtl ? privacyCtl.getState() : null };
 }
 
 function broadcast(channel, data, exceptSender) {
@@ -339,6 +394,7 @@ function broadcast(channel, data, exceptSender) {
 
 function setSettings(patch, source) {
   settings = store.set(patch);
+  if (privacyCtl && patch && typeof patch.privacy === 'boolean') privacyCtl.setEnabled(patch.privacy);
   applyWindowSettings();
   broadcast('settings', payload(), source);
   return payload();
@@ -392,8 +448,10 @@ function onInputEvent(ev) {
 
 // macOS 授权后不用重启：钩子没起来时定期看一眼权限，有了就重新启动
 function watchHook() {
-  if (hook.state !== 'live' && hook.state !== 'listening') {
-    if (!IS_MAC || systemPreferences.isTrustedAccessibilityClient(false)) hook.start();
+  if (hook.state !== 'live') {
+    const trusted = !IS_MAC || systemPreferences.isTrustedAccessibilityClient(false);
+    // 未授权时不空转；unavailable 说明组件缺失，重试也不会成功，等「重新检测」按钮
+    if (trusted && hook.state !== 'unavailable') hook.start();
   }
   setTimeout(watchHook, hook.state === 'error' ? 3000 : 60000).unref();
 }
@@ -533,6 +591,11 @@ function registerIpc() {
   ipcMain.handle('hook:retry', (e) => {
     if (!isFromPanel(e)) return null;
     requestAccessibility();
+    if (IS_MAC && !systemPreferences.isTrustedAccessibilityClient(false)) {
+      broadcast('settings', payload()); // 还没授权：只刷新诊断，等用户勾选后由 watchHook 启动
+      return hookInfo();
+    }
+    if (hook.state === 'error') { try { hook.stop(); } catch { /* 保持错误诊断 */ } }
     if (hook.state !== 'live') hook.start();
     broadcast('settings', payload());
     return hookInfo();
@@ -571,12 +634,13 @@ async function runSelfTest() {
   });
 }
 
-function boot() {
+async function boot() {
   userDataDir = app.getPath('userData');
   assetsDir = at(app.getAppPath(), 'assets');
   rendererDir = at(__dirname, '..', 'renderer');
   store = new SettingsStore(at(userDataDir, 'settings.json'));
   settings = store.get();
+  try { await ensureInstalledLocation(); } catch (err) { console.error('[main] 安装引导失败:', err); }
   // 上次用的头像 / 配音文件已经不在了（被删、换了电脑）：回到默认，别留一个加载不出来的路径
   const headOk = !settings.head || fileExists(settings.head);
   const voiceOk = !settings.voice || fileExists(settings.voice);
@@ -589,6 +653,21 @@ function boot() {
   hook.on('event', onInputEvent);
   hook.on('state', () => broadcast('settings', payload()));
 
+  // 自动隐私保护：探测结论驱动「遮蔽/隐藏 + 停输入映射」，恢复时按用户显隐设置还原
+  privacyCtl = new PrivacyController();
+  privacyCtl.on('change', (state) => {
+    if (hook) hook.setBlocked(state.mode === 'shield' || state.mode === 'hidden');
+    if (state.mode === 'hidden') {
+      privacyHidden = true;
+      if (petWin && !petWin.isDestroyed() && petWin.isVisible()) petWin.hide();
+      if (panelWin && !panelWin.isDestroyed() && panelWin.isVisible()) panelWin.hide();
+    } else if (privacyHidden) {
+      privacyHidden = false;
+      applyWindowSettings(); // 不覆盖用户主动选择的「隐藏桌宠」
+    }
+    broadcast('privacy', state);
+  });
+
   createPetWindow();
   createPanelWindow();
   createTray();
@@ -599,6 +678,8 @@ function boot() {
   requestAccessibility();
   watchHook();
 
+  if (settings.privacy === true) privacyCtl.setEnabled(true); // 跟随上次保存的开关
+
   if (SELFTEST_DIR) {
     fs.mkdirSync(SELFTEST_DIR, { recursive: true });
     setTimeout(runSelfTest, 800);
@@ -608,10 +689,7 @@ function boot() {
   }
 }
 
-// 冒烟测试用独立的数据目录：不读也不写用户真实的配置和素材
-if (SELFTEST_DIR) app.setPath('userData', path.resolve(SELFTEST_DIR) + '-profile');
-
-app.whenReady().then(boot).catch((err) => console.error('[main] 启动失败:', err));
+app.whenReady().then(() => boot().catch((err) => console.error('[main] 启动失败:', err))).catch((err) => console.error('[main] 启动失败:', err));
 
 app.on('activate', () => {
   if (petWin && !petWin.isVisible()) petWin.showInactive();

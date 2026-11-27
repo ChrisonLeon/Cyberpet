@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('panel', {
   banner: (show) => ipcRenderer.send('panel:banner', !!show),
   onSettings: (cb) => ipcRenderer.on('settings', (_e, payload) => cb(payload)),
   onStatus: (cb) => ipcRenderer.on('pet:status', (_e, s) => cb(s)),
+  onPrivacy: (cb) => ipcRenderer.on('privacy', (_e, s) => cb(s)),
 });

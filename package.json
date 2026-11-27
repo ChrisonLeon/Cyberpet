@@ -1,7 +1,7 @@
 {
   "name": "bxc-desktop-pet",
   "productName": "Cyberpet",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Cyberpet · 头身分离桌宠（Windows / macOS）",
   "main": "src/main/main.js",
   "private": true,
@@ -11,6 +11,7 @@
     "start": "electron .",
     "icons": "electron tools/gen-icons.js",
     "selftest": "BXC_PET_SELFTEST=.selftest electron .",
+    "build:privacy": "bash tools/build-privacy.sh",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
     "dist:all": "electron-builder --mac --win",
@@ -45,6 +46,12 @@
       "**/node_modules/uiohook-napi/**"
     ],
     "afterPack": "tools/after-pack.js",
+    "extraResources": [
+      {
+        "from": "native/bin",
+        "to": "helpers"
+      }
+    ],
     "npmRebuild": false,
     "mac": {
       "category": "public.app-category.entertainment",

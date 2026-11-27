@@ -34,6 +34,8 @@
         <path class="m-body" d="M34 6 C 52 8, 60 24, 59 44 C 58 62, 48 70, 33 70 C 18 70, 6 62, 6 44 C 6 24, 16 4, 34 6 Z"/>
         <path class="m-split" d="M33 7 L 33 27 M 7 27 Q 33 19 58 28"/>
         <rect id="mouseWheel" x="29.5" y="13" width="7" height="14" rx="3.5"/>
+        <path id="mouseBtnL" class="m-btn" d="M33 7 C 21 6.4, 13 12, 6.6 25 C 6.7 25.6, 6.9 26.3, 7.2 27 Q 33 19 33 26 L 33 7 Z"/>
+        <path id="mouseBtnR" class="m-btn" d="M33 7 L 33 26 Q 33 19.5 57.8 28 C 58.1 27.2, 58.4 26.3, 58.5 25.6 C 54.5 13, 46 6.6, 34 6 C 33.7 6, 33.3 6, 33 7 Z"/>
       </g>
     </svg>
 
@@ -45,11 +47,12 @@
 
     <div id="head">
       <div id="headAnim">
-        <img id="headGhost" alt=""><img id="headImg" alt=""><video id="headVideo" muted loop autoplay playsinline disableremoteplayback></video>
+        <img id="headGhost" alt=""><img id="headImg" alt=""><video id="headVideo" muted playsinline disableremoteplayback></video>
         <svg id="headCartoon" viewBox="0 0 160 158"></svg>
       </div>
     </div>
 
+    <div id="privacyBadge">🛡 保护中 · 键盘已遮挡</div>
     <div id="bubbles"></div>
     <div id="hearts"></div>
     <div id="speech"><span id="speechText"></span><svg id="speechFlame" viewBox="0 0 40 56">

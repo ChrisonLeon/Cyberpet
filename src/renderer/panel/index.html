@@ -3,66 +3,72 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:">
-  <title>Cyberpet · 控制面板</title>
+  <title>桌宠控制面板</title>
   <link rel="stylesheet" href="panel.css">
 </head>
 <body>
   <div id="card">
     <header id="titlebar">
       <div class="titles">
-        <h1>Cyberpet <span>·</span> 头身分离工坊</h1>
-        <p>小黑猫 / 蓝白猫 / 橘猫 / 奶黄猫 / 卫衣人偶下半身 + 真人抠头（支持图片 / GIF / 动态 PNG / 视频）</p>
+        <h1>桌宠控制面板</h1>
+        <p>四种小猫 · 可选自定义图片或视频头像</p>
       </div>
       <div class="chips">
         <span id="hookChip" class="chip" hidden></span>
         <span id="fpsChip" class="chip"><i id="fpsDot"></i><b id="fpsVal">-- FPS</b><em id="modeVal">启动中</em></span>
-        <button id="btnCollapse" class="iconbtn" title="收起面板（点菜单栏 / 托盘图标可再打开）">—</button>
+        <button id="btnCollapse" class="iconbtn" aria-label="收起面板" title="收起面板（点菜单栏 / 托盘图标可再打开）">—</button>
       </div>
     </header>
 
-    <div id="perm" class="banner" hidden>
-      <span id="permText"></span>
-      <button id="btnPermOpen" class="pill" hidden>打开系统设置</button>
-      <button id="btnRetry" class="pill">重新检测</button>
-    </div>
+    <main aria-label="桌宠设置" tabindex="0">
+      <div id="perm" class="banner" hidden>
+        <span id="permText"></span>
+        <div class="banner-actions">
+          <button id="btnPermOpen" class="pill" hidden>打开系统设置</button>
+          <button id="btnRetry" class="pill">重新检测</button>
+        </div>
+      </div>
 
-    <main>
       <section class="row"><span class="lab">身子</span>
-        <button class="pill" data-body="black">🐱️ 小黑猫身</button>
-        <button class="pill" data-body="bluewhite">🐈️ 蓝白小猫身</button>
-        <button class="pill" data-body="doll">🧍️ 卫衣人偶身</button>
-        <button class="pill" data-body="orange">🐯 橘猫身</button>
-        <button class="pill" data-body="cream">🐣 奶黄猫身</button>
+        <button class="pill" data-body="black" aria-pressed="false">小黑猫</button>
+        <button class="pill" data-body="bluewhite" aria-pressed="false">蓝白猫</button>
+        <button class="pill" data-body="orange" aria-pressed="false">橘猫</button>
+        <button class="pill" data-body="cream" aria-pressed="false">奶黄猫</button>
       </section>
 
-      <section class="row"><span class="lab">脑袋</span>
-        <button class="pill" id="btnHeadMode" title="开：真人抠出来的头悬浮在身子上；关：换成 Q 版猫头">👶️ 真人抠头拼接（头身分离）</button>
-        <button class="pill" id="btnPickHead" title="选一张图片当脑袋，选中即生效；PNG / JPG / GIF / 动态 PNG 都行；也可以在本面板按 ⌘V / Ctrl+V 直接粘贴剪贴板里的图片">🖼️ 选图片头像</button>
-        <button class="pill" id="btnPickHeadVideo" title="选一段视频当脑袋，选中即生效，循环播放">🎬️ 选视频头像</button>
-        <button class="pill" id="btnResetHead" title="换回内置的默认头像">🖼️ 还原默认头像</button>
-        <span class="note" id="headName"></span>
+      <section class="row"><span class="lab">头像</span>
+        <button class="pill" id="btnHeadMode" aria-pressed="false" title="开启使用自定义头像；关闭使用 Q 版猫头">使用自定义头像</button>
+        <button class="pill" id="btnPickHead" title="选择图片即生效；支持 PNG / JPG / GIF / 动态 PNG，也可按 ⌘V / Ctrl+V 粘贴图片">选图片</button>
+        <button class="pill" id="btnPickHeadVideo" title="选择视频即生效，静音循环播放；触发时可播放原声">选视频</button>
+        <button class="pill" id="btnResetHead" title="恢复内置默认头像">还原默认头像</button>
+        <span class="note full" id="headName"></span>
       </section>
 
       <section class="row"><span class="lab">互动</span>
-        <button class="pill" data-act="type-demo">⌨️ 试试打字</button>
-        <button class="pill" id="btnFrenzy">⚡️ 高速暴走</button>
-        <button class="pill" data-act="mouse-demo">🖱️ 移动鼠标</button>
-        <button class="pill" data-act="pat">🐾️ 摸摸脑袋</button>
-        <button class="pill hot" data-act="angry">🔥️ 能别放屁吗!</button>
+        <button class="pill" data-act="type-demo">试试打字</button>
+        <button class="pill" id="btnFrenzy" aria-pressed="false">高速暴走</button>
+        <button class="pill" data-act="mouse-demo">移动鼠标</button>
+        <button class="pill" data-act="pat">摸摸脑袋</button>
+        <button class="pill hot" id="btnAngryLine" aria-pressed="false" title="独立台词开关，默认关闭；点击仅保存选项，不触发生气，也不改变原声彩蛋">能别放屁吗!</button>
+        <span class="note full">台词按钮亮起后，生气时显示台词；再次点击取消。声音由下方配音设置决定。</span>
       </section>
 
       <section class="row"><span class="lab">调节</span>
         <label class="slider">头大小<input type="range" id="headScale" min="0.6" max="1.4" step="0.01"><b id="headScaleVal"></b></label>
-        <label class="slider" title="整个桌宠变大变小（窗口一起缩放）">大小<input type="range" id="petScale" min="0.6" max="1.5" step="0.05"><b id="petScaleVal"></b></label>
-        <label class="chk" title="锁定后不能拖动头像调整位置（此时拖头=摸头）；不勾选时按住头像拖动即可调整位置"><input type="checkbox" data-key="headLock">锁定头像位置</label>
-        <button class="pill ghost" id="btnResetHeadPos" title="头像回到默认位置">归位</button>
+        <label class="slider" title="整个桌宠变大变小（窗口一起缩放）">整体大小<input type="range" id="petScale" min="0.6" max="1.5" step="0.05"><b id="petScaleVal"></b></label>
+        <label class="chk" title="锁定后不能拖动头像调整位置；未锁定时按住头像拖动可调整位置"><input type="checkbox" data-key="headLock">锁定头像位置</label>
+        <button class="pill ghost" id="btnResetHeadPos" title="仅将头像偏移归位，不改变锁定设置">头像归位</button>
         <label class="chk"><input type="checkbox" data-key="sticker">贴纸白边</label>
         <label class="chk"><input type="checkbox" data-key="keyBubbles">按键气泡</label>
         <label class="chk"><input type="checkbox" data-key="keySfx">键盘音效</label>
-        <label class="chk" id="easterWrap"><input type="checkbox" data-key="voiceEaster">原声彩蛋</label>
       </section>
 
-      <section class="row"><span class="lab">更多</span>
+      <section class="row"><span class="lab">键鼠</span>
+        <span class="note">键鼠方向</span>
+        <div class="button-group" role="group" aria-label="键鼠方向">
+          <button class="pill" data-kb-dir="forward" aria-pressed="false" title="键盘朝向小猫，鼠标在右侧">正向</button>
+          <button class="pill on" data-kb-dir="reverse" aria-pressed="true" title="反向摆放（默认）">反向（默认）</button>
+        </div>
         <label class="sel">轴体<select id="switchSound">
           <option value="mahjong">麻将音</option><option value="blue">青轴</option>
           <option value="woodfish">木鱼</option><option value="kitten">奶猫爪</option>
@@ -70,17 +76,42 @@
         <label class="sel">桌面<select id="desk">
           <option value="transparent">透明（默认）</option><option value="bluewhite">蓝白桌面</option><option value="dark">暗夜桌面</option><option value="none">无道具</option>
         </select></label>
-        <label class="chk" title="录屏、截图、屏幕共享时不会拍到桌宠（自己仍然看得到）"><input type="checkbox" data-key="privacy">隐私防截屏</label>
-        <span class="voice" id="voiceWrap">配音：<em id="voiceName">未导入</em></span>
-        <button class="pill" id="btnPickVoice" title="导入一段音频当配音（mp3 / m4a / wav），选中即生效；敲脑袋或打字太快时播放">导入配音</button>
-        <button class="pill ghost" id="btnClearVoice" hidden>清除</button>
       </section>
+
+      <section class="row"><span class="lab">配音</span>
+        <label class="chk" id="easterWrap"><input type="checkbox" data-key="voiceEaster">视频原声彩蛋</label>
+        <span class="voice" id="voiceWrap">当前声音：<em id="voiceName">合成音效</em></span>
+        <button class="pill" id="btnPickVoice" title="导入 mp3 / m4a / wav，触发时使用；启用视频原声时原声优先">导入配音</button>
+        <button class="pill ghost" id="btnClearVoice" hidden>清除配音</button>
+        <span class="note full">原声彩蛋仅对视频头像可用；图片或 Q 版猫头时置灰并保留选项。切换声音来源会停止上一段声音；台词开关不影响声音来源。</span>
+      </section>
+
+      <section class="row privacy-row"><span class="lab">隐私</span>
+        <label class="chk"><input type="checkbox" data-key="privacy">自动隐私保护</label>
+        <span id="privacyStatus" class="chip wait" role="status" aria-live="polite">实际状态未知</span>
+        <span id="privacyReason" class="note full">等待主进程报告实际保护状态。</span>
+        <p class="help full">开启后，在检测能力可用时：安全输入 → 闭眼并遮挡键盘；全屏或常见录屏软件运行 → 自动隐藏桌宠。无法识别所有密码框或录屏，也不保证截图、共享时不可见。能力 unknown 表示当前不可用或尚未确认，不能视作已保护。</p>
+        <ul id="privacyCapabilities" class="capabilities full" aria-label="隐私检测能力"></ul>
+      </section>
+
+      <details id="diagnostics" class="diagnostics">
+        <summary>安装与授权诊断</summary>
+        <dl>
+          <dt>运行路径 execPath</dt><dd id="diagExecPath">unknown</dd>
+          <dt>安装状态 isInstalled</dt><dd id="diagInstalled">unknown</dd>
+          <dt>监听状态 state</dt><dd id="diagHookState">unknown</dd>
+          <dt>辅助功能 trusted</dt><dd id="diagTrusted">unknown</dd>
+          <dt>加载方式 loadVia</dt><dd id="diagLoadVia">unknown</dd>
+          <dt>实际错误 error</dt><dd id="diagHookError">未报告</dd>
+        </dl>
+        <p class="help">加载失败、启动失败与系统权限是不同问题，请结合实际错误排查。安装或更新本身不代表已获授权。</p>
+      </details>
     </main>
 
-    <footer id="aboutRow" hidden>作者：<span id="aboutText"></span></footer>
-    <footer>直接<b>敲键盘</b>（猫爪会移到对应的键上按）、<b>移动鼠标</b>，或<b>敲一下桌宠的脑袋</b>触发台词；<b>按住脑袋滑动</b>是摸头；拖动身子 / 键盘可以挪位置。</footer>
+    <footer id="aboutRow" hidden><span id="aboutText"></span></footer>
+    <footer>敲键盘与移动鼠标可互动；点脑袋触发生气，是否显示台词由独立按钮决定。锁定头像后可滑动摸头；拖动身子或键盘可挪位置。</footer>
   </div>
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
   <script src="../../shared/voice-rules.js"></script>
   <script src="panel.js"></script>
 </body>

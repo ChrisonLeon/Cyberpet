@@ -85,7 +85,7 @@ test('设置的默认值完整，非法输入全部丢弃', () => {
   assert.deepEqual(sanitize(null), {});
   assert.deepEqual(sanitize('junk'), {});
   assert.deepEqual(sanitize([]), {});
-  assert.deepEqual(sanitize({ body: 'doll', desk: 'dark', sticker: false }), { body: 'doll', desk: 'dark', sticker: false });
+  assert.deepEqual(sanitize({ body: 'orange', desk: 'dark', sticker: false }), { body: 'orange', desk: 'dark', sticker: false });
   assert.equal(Object.keys(sanitize({ imageDir: '/a', videoDir: '/b', unknown: 1 })).length, 0, '已经下线的素材目录配置不再接受');
 });
 
@@ -132,12 +132,12 @@ test('猫身带实时计算的 S 形尾巴（含两只黄猫），人偶身没�
     for (const id of ['tailSil', 'tailColor', 'tailTipC']) assert.ok(torso.includes(`id="${id}"`), `${v} 缺少 ${id}`);
     assert.equal(torso.includes('tail-grp'), false, `${v}：不应再有刚体分段尾巴`);
   }
-  assert.equal(ART.torsoMarkup('doll').includes('tailColor'), false);
+
   // 实时路径：从尾根出发、贝塞尔平滑、无 NaN，尾尖段是共享几何的子路径
   for (const [base, tip] of [[0, 0], [25, -40], [-25, 60], [45, -70]]) {
     const { d, dTip } = ART.tailPathD(base, tip);
     assert.ok(!/NaN/.test(d + dTip), `角度 ${base}/${tip} 出现 NaN`);
-    assert.ok(/^M118(\.0)? 88(\.0)?/.test(d), '路径应从尾根 (118,88) 出发');
+    assert.ok(/^M118(\.\d+)? 88(\.\d+)?/.test(d), '路径应从尾根 (118,88) 出发');
     assert.ok(d.length > dTip.length, '尾尖段应是整条路径的子集');
     assert.ok(d.endsWith(dTip.slice(-10)), '尾尖段必须与整条尾巴共享同一几何（否则接口会错位）');
   }
@@ -168,6 +168,51 @@ test('按键钩子把键码翻译成按键名，并识别「按住不放」', { 
   hook.onKey({ keycode: 999999 });
   assert.equal(got[4].name, '', '认不出的键码不崩溃，按空名处理');
   assert.equal(typeof hooks.labelFor, 'function');
+});
+
+// ---------- 自动隐私保护：优先级与保守回退 ----------
+test('隐私状态：正结论优先，未知/失联一律保守遮蔽，关闭即 off', () => {
+  const PRIVACY = require('../src/shared/privacy-rules');
+  const probe = {
+    sensitive: false, fullscreen: false, recorder: false, trusted: true,
+    capabilities: PRIVACY.emptyCapabilities(),
+  };
+  // 关闭总开关：不管探测到什么都直接 off
+  assert.deepEqual(PRIVACY.resolve({ enabled: false, raw: probe, failure: '' }), { mode: 'off', reason: 'disabled' });
+  // 探测器失联/输出坏数据：保守遮蔽，不当成安全
+  assert.equal(PRIVACY.resolve({ enabled: true, raw: null, failure: '' }).mode, 'shield');
+  assert.equal(PRIVACY.resolve({ enabled: true, raw: probe, failure: 'helper-exited' }).mode, 'shield');
+  // 正结论优先级：录屏 > 全屏 > 密码输入
+  const withCap = { ...probe, capabilities: { ...PRIVACY.emptyCapabilities(), sensitive: true, fullscreen: true, recorder: true } };
+  assert.deepEqual(PRIVACY.resolve({ enabled: true, raw: { ...withCap, recorder: true }, failure: '' }),
+    { mode: 'hidden', reason: 'recorder-running' });
+  assert.deepEqual(PRIVACY.resolve({ enabled: true, raw: { ...withCap, fullscreen: true }, failure: '' }),
+    { mode: 'hidden', reason: 'fullscreen' });
+  assert.deepEqual(PRIVACY.resolve({ enabled: true, raw: { ...withCap, sensitive: true }, failure: '' }),
+    { mode: 'shield', reason: 'sensitive-input' });
+  // 某项能力不可测（null / capability=false）：不当作安全（其余项全部健康才轮得到它）
+  const healthy = { ...probe, capabilities: { ...PRIVACY.emptyCapabilities(), sensitive: true, fullscreen: true, recorder: true } };
+  assert.equal(PRIVACY.resolve({ enabled: true, raw: { ...healthy, sensitive: null }, failure: '' }).reason, 'sensitive-unknown');
+  assert.equal(PRIVACY.resolve({ enabled: true, raw: { ...healthy, recorder: null }, failure: '' }).reason, 'recorder-unknown');
+  assert.equal(PRIVACY.resolve({ enabled: true, raw: { ...healthy, fullscreen: null, capabilities: { ...healthy.capabilities, fullscreen: false } }, failure: '' }).reason, 'fullscreen-unknown');
+  assert.equal(PRIVACY.resolve({ enabled: true, raw: { ...probe, trusted: false }, failure: '' }).reason, 'accessibility-unavailable');
+  // 全部明确且健康：正常显示
+  assert.deepEqual(PRIVACY.resolve({ enabled: true, raw: healthy, failure: '' }), { mode: 'normal', reason: 'clear' });
+  // normalizeProbe：坏数据返回 null，白名单外的字段不流入 UI
+  assert.equal(PRIVACY.normalizeProbe({ junk: 1 }), null);
+  assert.equal(PRIVACY.normalizeProbe({ sensitive: 'yes', fullscreen: false, recorder: false, trusted: true, capabilities: {} }), null);
+  const clean = PRIVACY.normalizeProbe({ ...probe, extraField: 'leak' });
+  assert.equal(clean.extraField, undefined);
+});
+
+test('探测器路径：按平台/架构解析，打包后指向 Resources/helpers，不搜索 PATH', () => {
+  const { resolveHelperPath } = require('../src/main/privacy-controller');
+  const dev = resolveHelperPath({ platform: 'darwin', arch: 'arm64', isPackaged: false, resourcesPath: '' });
+  assert.ok(dev.endsWith('native/bin/darwin-arm64/privacy-probe'), dev);
+  const packed = resolveHelperPath({ platform: 'darwin', arch: 'arm64', isPackaged: true, resourcesPath: '/app/Resources' });
+  assert.equal(packed, '/app/Resources/helpers/darwin-arm64/privacy-probe');
+  assert.equal(resolveHelperPath({ platform: 'linux', arch: 'x64', isPackaged: false, resourcesPath: '' }), null);
+  assert.equal(resolveHelperPath({ platform: 'win32', arch: 'arm', isPackaged: false, resourcesPath: '' }), null);
 });
 
 test('鼠标移动事件限流，不会刷屏', { skip: !hooks.hookAvailable && '当前环境没有全局键鼠组件' }, () => {
