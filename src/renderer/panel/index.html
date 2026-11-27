@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:">
+  <title>Cyberpet · 控制面板</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="card">
+    <header id="titlebar">
+      <div class="titles">
+        <h1>Cyberpet <span>·</span> 白小纯头身分离工坊</h1>
+        <p>小黑猫 / 蓝白猫 / 卫衣人偶下半身 + 白小纯真人抠头（支持图片 / GIF / 动态 PNG / 视频）</p>
+      </div>
+      <div class="chips">
+        <span id="hookChip" class="chip" hidden></span>
+        <span id="fpsChip" class="chip"><i id="fpsDot"></i><b id="fpsVal">-- FPS</b><em id="modeVal">启动中</em></span>
+        <button id="btnCollapse" class="iconbtn" title="收起面板（点菜单栏 / 托盘图标可再打开）">—</button>
+      </div>
+    </header>
+
+    <div id="perm" class="banner" hidden>
+      <span id="permText"></span>
+      <button id="btnPermOpen" class="pill" hidden>打开系统设置</button>
+      <button id="btnRetry" class="pill">重新检测</button>
+    </div>
+
+    <main>
+      <section class="row"><span class="lab">身子</span>
+        <button class="pill" data-body="black">🐱️ 小黑猫身</button>
+        <button class="pill" data-body="bluewhite">🐈️ 蓝白小猫身</button>
+        <button class="pill" data-body="doll">🧍️ 卫衣人偶身</button>
+        <button class="pill" data-body="orange">🐯 橘猫身</button>
+        <button class="pill" data-body="cream">🐣 奶黄猫身</button>
+      </section>
+
+      <section class="row"><span class="lab">脑袋</span>
+        <button class="pill" id="btnHeadMode" title="开：真人抠出来的头悬浮在身子上；关：换成 Q 版猫头">👶️ 真人抠头拼接（头身分离）</button>
+        <button class="pill" id="btnPickHead" title="选一张图片当脑袋，选中即生效；PNG / JPG / GIF / 动态 PNG 都行；也可以在本面板按 ⌘V / Ctrl+V 直接粘贴剪贴板里的图片">🖼️ 选图片头像</button>
+        <button class="pill" id="btnPickHeadVideo" title="选一段视频当脑袋，选中即生效，循环播放">🎬️ 选视频头像</button>
+        <button class="pill" id="btnResetHead" title="换回内置的白小纯头">🖼️ 还原白小纯头</button>
+        <span class="note" id="headName"></span>
+      </section>
+
+      <section class="row"><span class="lab">互动</span>
+        <button class="pill" data-act="type-demo">⌨️ 试试打字</button>
+        <button class="pill" id="btnFrenzy">⚡️ 高速暴走</button>
+        <button class="pill" data-act="mouse-demo">🖱️ 移动鼠标</button>
+        <button class="pill" data-act="pat">🐾️ 摸摸脑袋</button>
+        <button class="pill hot" data-act="angry">🔥️ 能别放屁吗!</button>
+      </section>
+
+      <section class="row"><span class="lab">调节</span>
+        <label class="slider">头大小<input type="range" id="headScale" min="0.6" max="1.4" step="0.01"><b id="headScaleVal"></b></label>
+        <label class="slider" title="整个桌宠变大变小（窗口一起缩放）">大小<input type="range" id="petScale" min="0.6" max="1.5" step="0.05"><b id="petScaleVal"></b></label>
+        <label class="chk"><input type="checkbox" data-key="sticker">贴纸白边</label>
+        <label class="chk"><input type="checkbox" data-key="keyBubbles">按键气泡</label>
+        <label class="chk"><input type="checkbox" data-key="keySfx">键盘音效</label>
+        <label class="chk" id="easterWrap"><input type="checkbox" data-key="voiceEaster">原声彩蛋</label>
+      </section>
+
+      <section class="row"><span class="lab">更多</span>
+        <label class="sel">轴体<select id="switchSound">
+          <option value="mahjong">麻将音</option><option value="blue">青轴</option>
+          <option value="woodfish">木鱼</option><option value="kitten">奶猫爪</option>
+        </select></label>
+        <label class="sel">桌面<select id="desk">
+          <option value="transparent">透明（默认）</option><option value="bluewhite">蓝白桌面</option><option value="dark">暗夜桌面</option><option value="none">无道具</option>
+        </select></label>
+        <label class="chk" title="录屏、截图、屏幕共享时不会拍到桌宠（自己仍然看得到）"><input type="checkbox" data-key="privacy">隐私防截屏</label>
+        <span class="voice" id="voiceWrap">配音：<em id="voiceName">未导入</em></span>
+        <button class="pill" id="btnPickVoice" title="导入一段音频当配音（mp3 / m4a / wav），选中即生效；敲脑袋或打字太快时播放">导入配音</button>
+        <button class="pill ghost" id="btnClearVoice" hidden>清除</button>
+      </section>
+    </main>
+
+    <footer id="aboutRow" hidden>作者：<span id="aboutText"></span></footer>
+    <footer>直接<b>敲键盘</b>（猫爪会移到对应的键上按）、<b>移动鼠标</b>，或<b>敲一下桌宠的脑袋</b>触发台词；<b>按住脑袋滑动</b>是摸头；拖动身子 / 键盘可以挪位置。</footer>
+  </div>
+  <div id="toast"></div>
+  <script src="../../shared/voice-rules.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

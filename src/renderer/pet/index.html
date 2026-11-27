@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob:; media-src 'self' file:">
+  <title>Cyberpet · 白小纯桌宠</title>
+  <link rel="stylesheet" href="pet.css">
+</head>
+<body data-body="black" data-head="photo" data-desk="transparent" data-media="image" class="sticker">
+  <div id="stage">
+    <svg id="pad" viewBox="0 0 394 430" width="394" height="430">
+      <defs>
+        <linearGradient id="padBW" x1="0" y1="0" x2=".35" y2="1">
+          <stop offset="0" stop-color="#f6f9ff"/><stop offset="1" stop-color="#cfe0ff"/>
+        </linearGradient>
+        <linearGradient id="padDark" x1="0" y1="0" x2=".35" y2="1">
+          <stop offset="0" stop-color="#3a4259"/><stop offset="1" stop-color="#161a26"/>
+        </linearGradient>
+      </defs>
+      <rect class="sil" x="3" y="310" width="388" height="112" rx="28" fill="#fff" stroke="#fff" stroke-width="6"/>
+      <rect id="padRect" x="3" y="310" width="388" height="112" rx="28" data-drag/>
+      <rect id="padStitch" x="11" y="318" width="372" height="96" rx="22"/>
+    </svg>
+
+    <div id="streaks"><i></i><i></i><i></i></div>
+
+    <!-- 身子和尾巴在同一张 SVG 里（viewBox 240 × 132） -->
+    <svg id="torso" viewBox="0 0 240 132" width="270" height="148.5" data-drag></svg>
+
+    <div id="kb" data-drag><svg id="kbd" viewBox="0 0 300 110" width="272" height="100"></svg></div>
+    <svg id="deskmouse" viewBox="0 0 64 76" width="57" height="68" data-drag>
+      <g id="mouseBody">
+        <path class="sil" d="M34 6 C 52 8, 60 24, 59 44 C 58 62, 48 70, 33 70 C 18 70, 6 62, 6 44 C 6 24, 16 4, 34 6 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+        <path class="m-body" d="M34 6 C 52 8, 60 24, 59 44 C 58 62, 48 70, 33 70 C 18 70, 6 62, 6 44 C 6 24, 16 4, 34 6 Z"/>
+        <path class="m-split" d="M33 7 L 33 27 M 7 27 Q 33 19 58 28"/>
+        <rect id="mouseWheel" x="29.5" y="13" width="7" height="14" rx="3.5"/>
+      </g>
+    </svg>
+
+    <svg id="fore" viewBox="0 0 394 430" width="394" height="430">
+      <path id="armLEdge" class="arm edge"/><path id="armREdge" class="arm edge"/>
+      <path id="armL" class="arm"/><path id="armR" class="arm"/>
+      <g id="pawL" data-drag></g><g id="pawR" data-drag></g>
+    </svg>
+
+    <div id="head">
+      <div id="headAnim">
+        <img id="headGhost" alt=""><img id="headImg" alt=""><video id="headVideo" muted loop autoplay playsinline disableremoteplayback></video>
+        <svg id="headCartoon" viewBox="0 0 160 158"></svg>
+      </div>
+    </div>
+
+    <div id="bubbles"></div>
+    <div id="hearts"></div>
+    <div id="speech"><span id="speechText"></span><svg id="speechFlame" viewBox="0 0 40 56">
+      <path d="M20 56 C 6 50, 4 38, 10 28 C 13 22, 12 14, 18 2 C 20 12, 27 14, 27 22 C 31 17, 32 11, 31 6 C 38 16, 41 30, 36 42 C 33 51, 28 55, 20 56 Z" fill="#ff7a00"/>
+      <path d="M20 52 C 13 48, 12 40, 16 34 C 18 30, 18 26, 21 20 C 23 28, 28 30, 28 38 C 28 46, 25 51, 20 52 Z" fill="#ffe14d"/>
+    </svg></div>
+  </div>
+  <audio id="voice" preload="auto"></audio>
+  <script src="../shared/art.js"></script>
+  <script src="../shared/audio.js"></script>
+  <script src="../../shared/keys.js"></script>
+  <script src="../../shared/voice-rules.js"></script>
+  <script src="pet.js"></script>
+</body>
+</html>

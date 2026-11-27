@@ -1,0 +1,212 @@
+:root { --hs: 1.1; }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; background: transparent; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  -webkit-user-select: none; user-select: none; cursor: default;
+}
+
+/* ---------- 身子配色 ---------- */
+body[data-body="black"] {
+  --fur: #1b1a20; --fur-hi: #2b2a33; --fur-line: #4a4956; --patch: #8f9bb4; --arm: #1b1a20; --arm-edge: rgba(255, 255, 255, .9);
+  --paw: #1b1a20; --paw-line: rgba(255, 255, 255, .55); --pad: #ffaec6;
+  --collar: #3d7bf2; --collar-hi: #a6c3ff;
+  --whisk: #9a99a6; --nose: #ff9db5; --eye: #e9f76a; --ear-in: #6b4a5c; --mouth: #f4f4f8; --blush-o: .5;
+  --tail: #1b1a20; --tail-tip: #1b1a20; --tail-hi: #4d4c59;
+}
+body[data-body="bluewhite"] {
+  --fur: #f7f8fc; --fur-hi: #fff; --fur-line: #dfe5f1; --patch: #8f9bb4; --arm: #f7f8fc; --arm-edge: #8f9bb4;
+  --paw: #f7f8fc; --paw-line: #c9d3e4; --pad: #ffaec6;
+  --collar: #ff7a59; --collar-hi: #ffc0ae;
+  --whisk: #a9b2c6; --nose: #ff8fab; --eye: #6fb9ff; --ear-in: #ffc2d1; --mouth: #8a94aa; --blush-o: .8;
+  --tail: #8f9bb4; --tail-tip: #f7f8fc; --tail-hi: #b3bdd1;
+}
+body[data-body="orange"] {
+  --fur: #f2a24d; --fur-hi: #ffd08a; --fur-line: #d9882f; --patch: #fff6ea; --arm: #f2a24d; --arm-edge: rgba(255, 255, 255, .8);
+  --paw: #ffd9a8; --paw-line: rgba(255, 255, 255, .6); --pad: #ff9d9d;
+  --collar: #43b36b; --collar-hi: #a8e6c3;
+  --whisk: #c99a62; --nose: #ff8f6b; --eye: #6fc7ff; --ear-in: #ffc2a1; --mouth: #a86a3d; --blush-o: .7;
+  --tail: #f2a24d; --tail-tip: #fff6ea; --tail-hi: #ffd08a;
+}
+body[data-body="cream"] {
+  --fur: #ffe9c4; --fur-hi: #fff8e9; --fur-line: #ecd3a8; --patch: #f7d9ad; --arm: #ffe9c4; --arm-edge: rgba(214, 178, 128, .55);
+  --paw: #fff3dd; --paw-line: #ecd3a8; --pad: #ffb9c3;
+  --collar: #ff8fab; --collar-hi: #ffc9d8;
+  --whisk: #c9ae86; --nose: #ff8fab; --eye: #79c7ff; --ear-in: #ffcfe0; --mouth: #b08d5f; --blush-o: .8;
+  --tail: #f7d9ad; --tail-tip: #fff8e9; --tail-hi: #fff3dd;
+}
+body[data-body="doll"] {
+  --fur: #2a2932; --fur-hi: #3f3e4a; --fur-line: #5a596b; --patch: transparent; --arm: #2a2932; --arm-edge: rgba(255, 255, 255, .85);
+  --paw: #fdfdfd; --paw-line: rgba(255, 255, 255, .45);
+  --whisk: #9a99a6; --nose: #ff9db5; --eye: #e9f76a; --ear-in: #6b4a5c; --mouth: #f4f4f8; --blush-o: .5;
+}
+
+/* ---------- 舞台布局（394 × 430）---------- */
+#stage { position: relative; width: 394px; height: 430px; }
+#stage > * { position: absolute; }
+#pad { left: 0; top: 0; }
+#padRect { fill: url(#padBW); }
+#padStitch { fill: none; stroke: rgba(255, 255, 255, .85); stroke-width: 1.6; stroke-dasharray: 5 6; stroke-linecap: round; }
+body[data-desk="dark"] #padRect { fill: url(#padDark); }
+body[data-desk="dark"] #padStitch { stroke: rgba(255, 255, 255, .16); }
+body[data-desk="transparent"] #pad { display: none; }
+body[data-desk="none"] #pad, body[data-desk="none"] #kb, body[data-desk="none"] #deskmouse { display: none; }
+
+/* 身子 + 尾巴同一张 SVG（viewBox 240 × 132，缩放 1.125） */
+#torso { left: 124px; top: 209px; width: 270px; height: 148.5px; transform-origin: 50% 100%; }
+#torso .string { fill: none; stroke: #f4f6fb; stroke-width: 2; stroke-linecap: round; }
+#torso .aglet { fill: #cfd6e6; }
+#torso .collar { fill: none; stroke: var(--collar); stroke-width: 9; stroke-linecap: round; }
+#torso .collar-hi { fill: none; stroke: var(--collar-hi); stroke-width: 2; stroke-linecap: round; opacity: .75; }
+#torso .bell-slit { fill: none; stroke: #b9800a; stroke-width: 1.6; stroke-linecap: round; }
+#torso .hood { fill: var(--fur-line); }
+#torso .pocket { fill: var(--fur); stroke: var(--fur-line); stroke-width: 1.6; stroke-linejoin: round; }
+#bell { transform-origin: 80px 45px; }
+
+#kb { left: 84px; top: 318px; width: 272px; height: 100px; transform-origin: 50% 0; transform: perspective(580px) rotateX(44deg); }
+#kbd { display: block; }
+#kbd .kb-case { fill: #2b3140; }
+#kbd .kb-plate { fill: #3a4152; }
+#kbd .key .side { fill: #a9b2c5; }
+#kbd .key .cap { fill: #fbfcff; }
+#kbd .key text { fill: #3b4252; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-weight: 600; text-anchor: middle; }
+#kbd .key.accent .side { fill: #3b6fd0; }
+#kbd .key.accent .cap { fill: #5b96ff; }
+#kbd .key.accent text { fill: #fff; }
+#kbd .key.soft .side { fill: #9dbcff; }
+#kbd .key.soft .cap { fill: #d6e5ff; }
+#kbd .key.down .cap { fill: #ffd86b; transform: translateY(1.4px); }
+#kbd .key.down.accent .cap { fill: #ffb02e; }
+body[data-desk="dark"] #kbd .kb-case { fill: #0f1219; }
+body[data-desk="dark"] #kbd .kb-plate { fill: #1c202c; }
+body[data-desk="dark"] #kbd .key .side { fill: #0b0d13; }
+body[data-desk="dark"] #kbd .key .cap { fill: #39415a; }
+body[data-desk="dark"] #kbd .key text { fill: #dfe6f5; }
+
+#deskmouse { left: 4px; top: 338px; transform: rotate(-12deg); transform-origin: 50% 60%; }
+#deskmouse .m-body { fill: #fbfcff; stroke: #3a4152; stroke-width: 2; }
+#deskmouse .m-split { fill: none; stroke: #c3cbdb; stroke-width: 1.5; stroke-linecap: round; }
+#mouseWheel { fill: #5b96ff; stroke: #3a4152; stroke-width: 1.2; transform-box: fill-box; transform-origin: 50% 50%; }
+body[data-desk="dark"] #deskmouse .m-body { fill: #2b3140; stroke: #0f1219; }
+body[data-desk="dark"] #deskmouse .m-split { stroke: #1c202c; }
+body.reach #deskmouse { animation: mouseWiggle .2s ease-in-out infinite; }
+body.reach #mouseWheel { animation: wheelSpin .32s linear infinite; }
+@keyframes mouseWiggle { 0%, 100% { transform: rotate(-12deg) translateX(0); } 50% { transform: rotate(-9deg) translateX(3px); } }
+@keyframes wheelSpin { from { transform: scaleY(1); } 50% { transform: scaleY(.2); } to { transform: scaleY(1); } }
+
+#fore { left: 0; top: 0; pointer-events: none; }
+#fore .arm { fill: none; stroke: var(--arm); stroke-width: 15; stroke-linecap: round; pointer-events: none; }
+#fore .arm.edge { stroke: var(--arm-edge); stroke-width: 19; opacity: .6; }
+#fore .paw-body { fill: var(--paw); stroke: var(--paw-line); stroke-width: 1.4; }
+#fore .bean { fill: var(--pad); }
+
+/* ---------- 脑袋 ---------- */
+#head { left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+#headAnim {
+  position: absolute; left: 214px; top: 252px;
+  width: calc(152px * var(--hs)); height: calc(186px * var(--hs));
+  transform: translate(-50%, -100%); transform-origin: 50% 100%;
+  pointer-events: auto; cursor: pointer; will-change: transform;
+}
+#headImg, #headGhost, #headVideo { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: none; }
+body[data-head="photo"][data-media="image"] #headImg { display: block; }
+body[data-head="photo"].sticker[data-media="image"] #headGhost { display: block; }
+/* 视频头像：与图片头像严格互斥，永远只有一个在显示 */
+body[data-head="photo"][data-media="video"] #headVideo { display: block; object-fit: cover; }
+body.sticker[data-head="photo"][data-media="video"] #headVideo { border: 5px solid #fff; border-radius: 16px; box-shadow: 0 4px 10px rgba(0, 0, 0, .18); }
+body[data-head="cartoon"] #headCartoon { display: block; }
+#headCartoon { position: absolute; left: 0; bottom: 0; width: 100%; display: none; }
+body:not(.sticker) #headImg, body:not(.sticker) #headCartoon, body:not(.sticker) #headVideo { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .32)); }
+/* 贴纸白边：把图片压成纯白剪影，再用一串 drop-shadow 向外撑出描边 */
+#headGhost {
+  filter: brightness(0) invert(1)
+    drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+    drop-shadow(1.6px 1.6px 0 #fff) drop-shadow(-1.6px 1.6px 0 #fff) drop-shadow(1.6px -1.6px 0 #fff) drop-shadow(-1.6px -1.6px 0 #fff)
+    drop-shadow(0 5px 6px rgba(0, 0, 0, .28));
+}
+#headAnim.squish { animation: squish .42s cubic-bezier(.3, .7, .3, 1); }
+@keyframes squish {
+  0% { transform: translate(-50%, -100%) scale(1, 1); }
+  30% { transform: translate(-50%, -100%) scale(1.14, .84); }
+  62% { transform: translate(-50%, -100%) scale(.94, 1.08); }
+  100% { transform: translate(-50%, -100%) scale(1, 1); }
+}
+#headCartoon .ear, #headCartoon .face { fill: var(--fur); }
+#headCartoon .ear-in { fill: var(--ear-in); }
+#headCartoon .patch { fill: var(--patch); display: none; }
+body[data-body="bluewhite"] #headCartoon .patch { display: block; }
+#headCartoon .eye { transform-box: fill-box; transform-origin: 50% 50%; animation: blink 4.6s infinite; }
+#headCartoon .iris { fill: var(--eye); }
+#headCartoon .pupil { fill: #15151a; }
+#headCartoon .glint { fill: #fff; }
+#headCartoon .blush { fill: var(--nose); opacity: var(--blush-o); }
+#headCartoon .nose { fill: var(--nose); }
+#headCartoon .mouth { fill: none; stroke: var(--mouth); stroke-width: 1.8; stroke-linecap: round; }
+#headCartoon .whisk { fill: none; stroke: var(--whisk); stroke-width: 1.5; stroke-linecap: round; }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96.5% { transform: scaleY(.08); } }
+
+/* svg 根节点不参与命中，只有真正画了东西的图形可点（透明区域穿透到桌面） */
+#pad, #torso, #deskmouse { pointer-events: none; }
+#padRect, #torso *, #deskmouse * { pointer-events: visiblePainted; }
+#pawL *, #pawR * { pointer-events: visiblePainted; }
+
+/* ---------- 贴纸白边的矢量部分 ---------- */
+#pad .sil, #torso .sil, #headCartoon .sil, #deskmouse .sil, #kb .sil { display: none; }
+body.sticker #pad .sil, body.sticker #torso .sil,
+body.sticker #headCartoon .sil, body.sticker #deskmouse .sil, body.sticker #kb .sil { display: inline; }
+body:not(.sticker) #torso { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .26)); }
+
+/* ---------- 气泡 / 爱心 / 台词 ---------- */
+#bubbles, #hearts { left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+.kcap {
+  position: absolute; transform: translate(-50%, -50%); min-width: 26px; height: 26px; padding: 0 5px; border-radius: 7px;
+  background: linear-gradient(#fff, #eef2fb); box-shadow: 0 3px 0 #c5cde0, 0 6px 12px rgba(20, 30, 60, .2);
+  color: #39415a; font-size: 13px; font-weight: 700; line-height: 26px; text-align: center; white-space: nowrap;
+  animation: kcap .8s ease-out forwards;
+}
+.kcap.wide { font-size: 11px; }
+@keyframes kcap {
+  0% { transform: translate(-50%, -50%) scale(.5); opacity: 0; }
+  18% { transform: translate(-50%, -62%) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, calc(-50% - 40px)) scale(.9); opacity: 0; }
+}
+.heart { position: absolute; width: 18px; height: 18px; animation: heartUp 1s ease-out forwards; }
+.heart path { fill: #ff6b8a; stroke: #fff; stroke-width: 1.6; }
+@keyframes heartUp {
+  0% { transform: translate(-50%, -50%) scale(.4) rotate(0deg); opacity: 0; }
+  15% { transform: translate(-50%, -70%) scale(1.1) rotate(-8deg); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% - 74px)) scale(.9) rotate(var(--rot)); opacity: 0; }
+}
+#speech {
+  position: absolute; left: 50%; bottom: calc(186px + 186px * var(--hs));
+  display: flex; align-items: center; gap: 5px; white-space: nowrap; padding: 6px 14px 6px 16px; border-radius: 999px;
+  background: #fff; border: 2px solid #ff7b9c; color: #c2185b; font-size: 15px; font-weight: 700;
+  box-shadow: 0 6px 18px rgba(255, 90, 140, .28);
+  transform: translateX(-50%) scale(.6); transform-origin: 50% 100%; opacity: 0; pointer-events: none;
+  transition: opacity .12s, transform .18s cubic-bezier(.2, 1.4, .4, 1);
+}
+#speech::after {
+  content: ""; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; margin-left: -6px;
+  background: #fff; border-right: 2px solid #ff7b9c; border-bottom: 2px solid #ff7b9c; transform: rotate(45deg);
+}
+#speech.show { opacity: 1; transform: translateX(-50%) scale(1); }
+#speech.soft { border-color: #8fb6ff; color: #3568d4; box-shadow: 0 6px 18px rgba(90, 140, 255, .25); }
+#speech.soft::after { border-color: #8fb6ff; }
+#speechFlame { display: none; width: 17px; height: 21px; flex: none; }
+#speech.fire #speechFlame { display: block; }
+body.angry #speech.show { animation: bubbleShake .28s linear infinite; }
+@keyframes bubbleShake { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 25% { transform: translateX(calc(-50% - 2px)) rotate(-1.5deg); } 75% { transform: translateX(calc(-50% + 2px)) rotate(1.5deg); } }
+
+#streaks { display: none; }
+body.frenzy #streaks { display: block; }
+#streaks i {
+  position: absolute; height: 3px; border-radius: 3px; pointer-events: none;
+  background: linear-gradient(90deg, rgba(91, 150, 255, 0), rgba(91, 150, 255, .8)); animation: streak .45s linear infinite;
+}
+#streaks i:nth-child(1) { left: 60px; top: 236px; width: 84px; }
+#streaks i:nth-child(2) { left: 14px; top: 278px; width: 120px; animation-delay: .15s; }
+#streaks i:nth-child(3) { left: 52px; top: 300px; width: 70px; animation-delay: .3s; }
+@keyframes streak { from { transform: translateX(-36px); opacity: 0; } 30% { opacity: 1; } to { transform: translateX(14px); opacity: 0; } }
+
+/* 卡通耳朵（闲时抖耳朵用） */
+#headCartoon .ear { transform-box: fill-box; transform-origin: 50% 92%; }

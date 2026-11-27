@@ -1,0 +1,126 @@
+{
+  "name": "bxc-desktop-pet",
+  "productName": "Cyberpet",
+  "version": "1.3.3",
+  "description": "Cyberpet · 白小纯头身分离桌宠（Windows / macOS）",
+  "main": "src/main/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "ChrisonLeon",
+  "scripts": {
+    "start": "electron .",
+    "icons": "electron tools/gen-icons.js",
+    "selftest": "BXC_PET_SELFTEST=.selftest electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:all": "electron-builder --mac --win",
+    "dist:dir": "electron-builder --dir",
+    "test": "node --test",
+    "smoke": "BXC_PET_SELFTEST=.smoke electron .",
+    "smoke:win": "BXC_PET_SELFTEST=.smoke-win BXC_PET_PLATFORM=win32 electron ."
+  },
+  "devDependencies": {
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
+  },
+  "build": {
+    "appId": "top.baixiaochun.pet",
+    "productName": "Cyberpet",
+    "copyright": "Copyright © 2026 ChrisonLeon",
+    "artifactName": "BaiXiaoChunPet-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "!**/node_modules/uiohook-napi/build/**"
+    ],
+    "asarUnpack": [
+      "**/node_modules/uiohook-napi/**"
+    ],
+    "afterPack": "tools/after-pack.js",
+    "npmRebuild": false,
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "icon": "assets/icon.png",
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "白小纯桌宠 ${version}",
+      "contents": [
+        {
+          "x": 140,
+          "y": 180,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 180,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.png",
+      "executableName": "Cyberpet",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Cyberpet",
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "1052",
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    }
+  }
+}
