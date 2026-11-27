@@ -12,7 +12,6 @@ const DEFAULTS = {
   petScale: 1.0,        // 整体大小（窗口 + 内容一起缩放）
   angryLine: false,     // 「能别放屁吗」台词开关：选中后触发时在头上显示台词；未选中只暴躁敲键盘
   kbDir: 'reverse',     // 键鼠方向：reverse 反向（默认，鼠标在右）| forward 正向（键盘朝向宠物自己，鼠标在左）
-  kbLayout: '100',      // 键盘配列：100（全尺寸，含小键盘）| 80（无小键盘）| 75 | 65 | 60（需与实体键盘一致，爪子才会敲对键）
   sticker: true,        // 贴纸白边
   keyBubbles: true,     // 按键气泡
   keySfx: true,         // 键盘音效
@@ -40,7 +39,6 @@ const ENUMS = {
   switchSound: ['mahjong', 'blue', 'woodfish', 'kitten'],
   desk: ['transparent', 'bluewhite', 'dark', 'none'],
   kbDir: ['reverse', 'forward'],
-  kbLayout: ['100', '80', '75', '65', '60'],
 };
 const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'sfxOn', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock', 'angryLine', 'installChecked'];
 const PATHS = ['head', 'voice', 'lastImageDir', 'lastVideoDir', 'lastAudioDir'];
