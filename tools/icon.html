@@ -65,7 +65,10 @@
 
     function appIcon() {
       // 纯黑猫：卡通头 + 带尾巴的身子 + 两只爪子（贴纸白边保留），不用真人头像
-      const torso = ART.torsoMarkup('black');
+      const torso = ART.torsoMarkup('black')
+        .replace('id="tailSil"', `id="tailSil" d="${ART.tailPathD(9, 14).d}"`)
+        .replace('id="tailColor"', `id="tailColor" d="${ART.tailPathD(9, 14).d}"`)
+        .replace('id="tailTipC"', `id="tailTipC" d="${ART.tailPathD(9, 14).dTip}"`);
       const paw = ART.pawMarkup('black');
       const head = ART.cartoonHeadMarkup();
       return `<div id="app">

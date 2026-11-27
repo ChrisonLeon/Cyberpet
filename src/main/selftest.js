@@ -246,7 +246,8 @@ async function runSelfTest(ctx) {
   await step('head-offset', async () => { // 未锁定时拖头像=调位置，锁定后不可拖
     await setSettings({ headMode: 'photo', head: null, headLock: false, headOffset: null });
     await sleep(400);
-    const pos0 = await js(pet, "(() => { const r = document.getElementById('headAnim').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })()");
+    const posOf = "(() => { const r = document.getElementById('headAnim'); const c = getComputedStyle(r); return [Math.round(parseFloat(c.left)), Math.round(parseFloat(c.top))]; })()";
+    const pos0 = await js(pet, posOf);
     await js(pet, `(() => {
       const head = document.getElementById('headAnim');
       const fire = (type, x, y, mx, my) => head.dispatchEvent(new PointerEvent(type, {
@@ -257,7 +258,7 @@ async function runSelfTest(ctx) {
       return 1;
     })()`);
     await sleep(600);
-    const pos1 = await js(pet, "(() => { const r = document.getElementById('headAnim').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })()");
+    const pos1 = await js(pet, posOf);
     const saved = getSettings().headOffset;
     check(pos1[0] > pos0[0] && pos1[1] < pos0[1], `拖动后头像没有移动（${JSON.stringify(pos0)}→${JSON.stringify(pos1)}）`);
     check(saved && saved.x > 0 && saved.y < 0, `偏移没有落盘（${JSON.stringify(saved)}）`);
@@ -279,8 +280,8 @@ async function runSelfTest(ctx) {
     await shot(`${String(n++).padStart(2, '0')}-head-locked`);
     await setSettings({ headLock: false, headOffset: null });
     await sleep(400); // 等动画帧：脑袋有呼吸浮动，比较留容差
-    const pos2 = await js(pet, "(() => { const r = document.getElementById('headAnim').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })()");
-    check(Math.abs(pos2[0] - pos0[0]) <= 4 && Math.abs(pos2[1] - pos0[1]) <= 4, `归位后没有回到默认位置（${JSON.stringify(pos0)}→${JSON.stringify(pos2)}）`);
+    const pos2 = await js(pet, posOf);
+    check(pos2[0] === pos0[0] && pos2[1] === pos0[1], `归位后没有回到默认位置（${JSON.stringify(pos0)}→${JSON.stringify(pos2)}）`);
   });
   await step('head-sizes', async () => {
     await setSettings({ headScale: 1.4 });

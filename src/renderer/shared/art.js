@@ -10,10 +10,48 @@
   const DOLL_PATH = 'M34 118 L 34 54 C 34 30, 52 18, 80 18 C 108 18, 126 30, 126 54 L 126 118 Z';
   // 尾巴和身子画在同一张 SVG 里、共用一层白色贴纸底，接口处才不会断开。
   // S 形：从身子右下伸出，先向右再扬起，末端向右勾。坐标是身子的 viewBox 单位。
-  // 尾巴拆成两段：基础段连着身子，尾尖段独立旋转（动画里带弹性追赶，参考 KuroCat 的思路）
-  const TAIL_BASE = 'M126 98 C 158 107, 180 98, 187 74';
-  const TAIL_TIP = 'M187 74 C 192 54, 196 42, 215 35';
-  const TAIL_PIVOT = { base: [150, 96], tip: [187, 74] };
+  // 尾巴：单一连续曲线，每帧按两个弹簧角度实时重建路径——
+  // 没有两段刚体的接缝，任何角度组合下轮廓都是平滑的。
+  // 几何（torso viewBox 坐标）：尾根 (126,98)，静止方向 角度（度），段长
+  const TAIL_ROOT = [126, 98];
+  const TAIL_REST = { base: -21.4, tip: -54.3 }; // 相对水平线的静止方向
+  const TAIL_LEN = { base: 65.6, tip: 50 };
+
+  function smooth01(x) {
+    const t = Math.min(1, Math.max(0, x));
+    return t * t * (3 - 2 * t);
+  }
+
+  /**
+   * 计算尾巴路径。baseDeg / tipDeg 分别是尾根段、尾尖段相对静止方向的摆角（度）。
+   * 返回 { d, dTip }：d 是整条尾巴的中心线（Catmull-Rom 转贝塞尔），dTip 是最后
+   * 一小段（双色尾巴的浅色尾尖，和 d 共用同一几何，所以接口处永远平滑）。
+   */
+  function tailPathD(baseDeg, tipDeg) {
+    const rad = (deg) => (deg * Math.PI) / 180;
+    const a1 = TAIL_REST.base + rad(baseDeg);
+    const a2 = TAIL_REST.tip + rad(baseDeg + tipDeg);
+    const pts = [];
+    const N = 10;
+    for (let i = 0; i <= N; i++) {
+      const s = i / N;
+      const bend = smooth01((s - 0.42) / 0.16); // 只在关节附近过渡两种角度，两端保持纯方向
+      const ang = a1 + (a2 - a1) * bend;
+      const len = s <= 0.5 ? TAIL_LEN.base * (s / 0.5) : TAIL_LEN.base + TAIL_LEN.tip * ((s - 0.5) / 0.5);
+      pts.push([TAIL_ROOT[0] + Math.cos(ang) * len, TAIL_ROOT[1] + Math.sin(ang) * len]);
+    }
+    const toD = (list) => {
+      let out = `M${list[0][0].toFixed(1)} ${list[0][1].toFixed(1)}`;
+      for (let i = 0; i < list.length - 1; i++) {
+        const p0 = list[Math.max(0, i - 1)], p1 = list[i], p2 = list[i + 1], p3 = list[Math.min(list.length - 1, i + 2)];
+        const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+        const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+        out += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+      }
+      return out;
+    };
+    return { d: toD(pts), dTip: toD(pts.slice(-4)), root: TAIL_ROOT };
+  }
 
   const BELL = `
 <g id="bell">
@@ -48,16 +86,11 @@
   </radialGradient>
   <clipPath id="torsoClip"><path d="${TORSO_PATH}"/></clipPath>
 </defs>
-<g class="tail-grp tail-base"><path class="sil" d="${TAIL_BASE}" fill="none" stroke="#fff" stroke-width="33" stroke-linecap="round"/></g>
-<g class="tail-grp tail-tip"><path class="sil" d="${TAIL_TIP}" fill="none" stroke="#fff" stroke-width="33" stroke-linecap="round"/></g>
+<path id="tailSil" class="sil tail-stroke" fill="none" stroke="#fff" stroke-width="33" stroke-linecap="round"/>
 <g class="sil"><path d="${TORSO_PATH}" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></g>
 <path d="${TORSO_PATH}" fill="url(#torsoShade)"/>
-<g class="tail-grp tail-base">
-  <path class="tail-stroke" d="${TAIL_BASE}" fill="none" stroke="var(--tail)" stroke-width="27" stroke-linecap="round"/>
-</g>
-<g class="tail-grp tail-tip">
-  <path class="tail-stroke" d="${TAIL_TIP}" fill="none" stroke="var(--tail-tip)" stroke-width="27" stroke-linecap="round"/>
-</g>
+<path id="tailColor" class="tail-stroke" fill="none" stroke="var(--tail)" stroke-width="27" stroke-linecap="round"/>
+<path id="tailTipC" class="tail-stroke" fill="none" stroke="var(--tail-tip)" stroke-width="27" stroke-linecap="round"/>
 ${['bluewhite', 'orange', 'cream'].includes(variant) ? `<g clip-path="url(#torsoClip)" fill="var(--patch)">
   <path d="M14 114 C 4 70, 26 18, 80 14 C 76 46, 68 74, 64 120 L 14 114 Z"/>
   <path d="M96 15 C 124 20, 146 46, 152 80 C 132 66, 108 46, 96 15 Z"/>
@@ -149,5 +182,5 @@ ${eye(57)}${eye(103)}
 <rect class="kb-plate" x="3.6" y="3.6" width="292.8" height="102.8" rx="8"/>${keys}`;
   }
 
-  return { torsoMarkup, pawMarkup, cartoonHeadMarkup, keyboardSvg, TAIL_PIVOT };
+  return { torsoMarkup, pawMarkup, cartoonHeadMarkup, keyboardSvg, tailPathD };
 }));

@@ -48,7 +48,7 @@
     stage: $('#stage'),
     body: document.body,
     headAnim: $('#headAnim'), headImg: $('#headImg'), headGhost: $('#headGhost'), headVideo: $('#headVideo'), cartoon: $('#headCartoon'),
-    torso: $('#torso'), tailBase: [], tailTip: [], bell: null, pawL: $('#pawL'), pawR: $('#pawR'),
+    torso: $('#torso'), tailSil: null, tailColor: null, tailTipC: null, bell: null, pawL: $('#pawL'), pawR: $('#pawR'),
     armL: $('#armL'), armR: $('#armR'), armLEdge: $('#armLEdge'), armREdge: $('#armREdge'),
     kb: $('#kb'), kbd: $('#kbd'), bubbles: $('#bubbles'), hearts: $('#hearts'),
     speech: $('#speech'), speechText: $('#speechText'), voice: $('#voice'),
@@ -76,8 +76,9 @@
   function buildBody() {
     const v = cfg.settings.body;
     el.torso.innerHTML = ART.torsoMarkup(v);
-    el.tailBase = Array.from(el.torso.querySelectorAll('.tail-grp.tail-base'));
-    el.tailTip = Array.from(el.torso.querySelectorAll('.tail-grp.tail-tip'));
+    el.tailSil = el.torso.querySelector('#tailSil');
+    el.tailColor = el.torso.querySelector('#tailColor');
+    el.tailTipC = el.torso.querySelector('#tailTipC');
     el.cartoon.innerHTML = ART.cartoonHeadMarkup();
     el.pawL.innerHTML = ART.pawMarkup();
     el.pawR.innerHTML = ART.pawMarkup();
@@ -460,7 +461,7 @@
   el.headAnim.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     if (cfg.settings && !cfg.settings.headLock) {
-      headMove = { ox: cfg.offset.x, oy: cfg.offset.y, moved: 0 };
+      headMove = { lx: e.clientX, ly: e.clientY, ox: cfg.offset.x, oy: cfg.offset.y, moved: 0 };
       try { el.headAnim.setPointerCapture(e.pointerId); } catch { /* 不影响 */ }
     } else {
       press = { t: performance.now(), moved: 0, petting: false, sawHeld: false };
@@ -493,12 +494,18 @@
   }
 
   window.addEventListener('pointermove', (e) => {
-    if (headMove) { // 拖动头像位置
-      const nx = clamp(headMove.ox + (e.movementX || 0), -110, 110);
-      const ny = clamp(headMove.oy + (e.movementY || 0), -80, 60);
-      if (nx !== cfg.offset.x || ny !== cfg.offset.y) {
-        cfg.offset = { x: nx, y: ny };
-        headMove.moved += Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0);
+    if (headMove) { // 拖动头像位置（用 clientX/Y 差值，兼容一切输入环境）
+      const dx = (e.clientX || 0) - headMove.lx;
+      const dy = (e.clientY || 0) - headMove.ly;
+      headMove.lx = e.clientX;
+      headMove.ly = e.clientY;
+      const moved = Math.abs(dx) + Math.abs(dy);
+      if (moved) {
+        headMove.moved += moved;
+        cfg.offset = {
+          x: clamp(cfg.offset.x + dx, -110, 110),
+          y: clamp(cfg.offset.y + dy, -80, 60),
+        };
       }
       return;
     }
@@ -669,10 +676,13 @@
 
     el.torso.style.transform = `translateX(${springSpine.x.toFixed(2)}px) scaleY(${springSquash.x.toFixed(4)})`;
 
-    // 尾巴两段：尾根大摆，尾尖弹性追赶（打字 / 生气 / 开心时被「踢」一下会甩起来）
-    const pv = ART.TAIL_PIVOT;
-    for (const g of el.tailBase) g.setAttribute('transform', `rotate(${springTail.x.toFixed(2)} ${pv.base[0]} ${pv.base[1]})`);
-    for (const g of el.tailTip) g.setAttribute('transform', `rotate(${springTailTip.x.toFixed(2)} ${pv.tip[0]} ${pv.tip[1]})`);
+    // 尾巴：整条曲线每帧按两个弹簧角度实时重建（连续无接口）
+    if (el.tailColor) {
+      const td = ART.tailPathD(springTail.x, springTailTip.x - springTail.x);
+      el.tailSil.setAttribute('d', td.d);
+      el.tailColor.setAttribute('d', td.d);
+      el.tailTipC.setAttribute('d', td.dTip);
+    }
     if (el.bell) el.bell.style.transform = `rotate(${(7 * Math.sin(t * 2.1 - 1.3) + typing * 10 * Math.sin(t * 25)).toFixed(2)}deg)`;
     if ((cfg.settings ? cfg.settings.headMode : 'photo') === 'cartoon') {
       const ears = el.cartoon.querySelectorAll('.ear');

@@ -59,6 +59,7 @@ body[data-desk="none"] #pad, body[data-desk="none"] #kb, body[data-desk="none"] 
 #torso .collar { fill: none; stroke: var(--collar); stroke-width: 9; stroke-linecap: round; }
 #torso .collar-hi { fill: none; stroke: var(--collar-hi); stroke-width: 2; stroke-linecap: round; opacity: .75; }
 #torso .bell-slit { fill: none; stroke: #b9800a; stroke-width: 1.6; stroke-linecap: round; }
+body[data-body="doll"] #tailSil, body[data-body="doll"] #tailColor, body[data-body="doll"] #tailTipC { display: none; }
 #torso .hood { fill: var(--fur-line); }
 #torso .pocket { fill: var(--fur); stroke: var(--fur-line); stroke-width: 1.6; stroke-linejoin: round; }
 #bell { transform-origin: 80px 45px; }
@@ -151,8 +152,8 @@ body[data-body="bluewhite"] #headCartoon .patch { display: block; }
 #pawL *, #pawR * { pointer-events: visiblePainted; }
 
 /* ---------- 贴纸白边的矢量部分 ---------- */
-#pad .sil, #torso .sil, #headCartoon .sil, #deskmouse .sil, #kb .sil { display: none; }
-body.sticker #pad .sil, body.sticker #torso .sil,
+#pad .sil, #torso .sil, #headCartoon .sil, #deskmouse .sil, #kb .sil, #torso #tailSil { display: none; }
+body.sticker #pad .sil, body.sticker #torso .sil, body.sticker #torso #tailSil,
 body.sticker #headCartoon .sil, body.sticker #deskmouse .sil, body.sticker #kb .sil { display: inline; }
 body:not(.sticker) #torso { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .26)); }
 

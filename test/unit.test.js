@@ -126,16 +126,21 @@ test('导入后文件一定存在；超过上限时删最旧的，正在使用�
 });
 
 // ---------- 素材 ----------
-test('猫身带 S 形尾巴且与身子在同一张图里（含两只黄猫），人偶身没有尾巴', () => {
+test('猫身带实时计算的 S 形尾巴（含两只黄猫），人偶身没有尾巴', () => {
   for (const v of ['black', 'bluewhite', 'orange', 'cream']) {
     const torso = ART.torsoMarkup(v);
-    assert.equal(torso.split('tail-base').length - 1, 2, `${v}：尾根贴纸底 + 彩色`);
-    assert.equal(torso.split('class="tail-grp tail-tip"').length - 1, 2, `${v}：尾尖贴纸底 + 彩色两组`);
-    assert.equal(torso.split('var(--tail)').length - 1, 1, `${v}：尾根有底色描边`);
-    assert.ok(torso.includes('var(--tail-tip)'), `${v}：尾尖有独立的颜色（贴纸渐变）`);
-    assert.ok(ART.TAIL_PIVOT.base[1] > ART.TAIL_PIVOT.tip[1], '尾尖轴心应高于尾根（SVG y 越小越高）');
+    for (const id of ['tailSil', 'tailColor', 'tailTipC']) assert.ok(torso.includes(`id="${id}"`), `${v} 缺少 ${id}`);
+    assert.equal(torso.includes('tail-grp'), false, `${v}：不应再有刚体分段尾巴`);
   }
-  assert.equal(ART.torsoMarkup('doll').includes('tail-grp'), false);
+  assert.equal(ART.torsoMarkup('doll').includes('tailColor'), false);
+  // 实时路径：从尾根出发、贝塞尔平滑、无 NaN，尾尖段是共享几何的子路径
+  for (const [base, tip] of [[0, 0], [25, -40], [-25, 60], [45, -70]]) {
+    const { d, dTip } = ART.tailPathD(base, tip);
+    assert.ok(!/NaN/.test(d + dTip), `角度 ${base}/${tip} 出现 NaN`);
+    assert.ok(d.startsWith('M126'), '路径应从尾根出发');
+    assert.ok(d.length > dTip.length, '尾尖段应是整条路径的子集');
+    assert.ok(d.endsWith(dTip.slice(-10)), '尾尖段必须与整条尾巴共享同一几何（否则接口会错位）');
+  }
   assert.equal(ART.pawMarkup().split('class="bean"').length - 1, 4, '爪子上有四颗豆豆');
   for (const v of ['bluewhite', 'orange', 'cream']) assert.ok(ART.torsoMarkup(v).includes('clip-path='), `${v} 应有斑纹`);
   assert.equal(ART.torsoMarkup('black').includes('clip-path='), false, '黑猫不带斑纹');
