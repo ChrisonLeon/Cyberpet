@@ -21,12 +21,11 @@ const PLATFORM = SELFTEST_DIR && process.env.BXC_PET_PLATFORM ? process.env.BXC_
 
 const APP_TITLE = 'Cyberpet';
 const PET_SIZE = { width: 394, height: 430 };
-const PANEL_SIZE = { width: 720, height: 915 }; // 高度按内容实测校准（selftest「面板布局」日志），默认视图一屏放下、无滚动条
-const BANNER_H = 72; // 授权横幅出现时窗口扩高的量（横幅高度 + 上下边距）
+const PANEL_SIZE = { width: 720, height: 990 }; // 高度按内容实测校准（selftest「面板布局」日志），默认视图一屏放下、无滚动条
+const BANNER_H = 105; // 授权横幅出现时窗口扩高的量（横幅高度 + 上下边距）
 const ACTIONS = new Set(['type-demo', 'frenzy', 'mouse-demo', 'pat', 'angry']);
 const HEAD_VIDEO_EXTS = new Set(['mp4', 'webm', 'mov', 'm4v']);
 const IMAGE_PICK_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
-const VIDEO_PICK_EXTS = ['mp4', 'webm', 'mov', 'm4v'];
 const AUDIO_PICK_EXTS = ['mp3', 'wav', 'm4a', 'aac', 'ogg'];
 
 // 作者信息：把 show 改成 true 就会在面板底部和「使用说明」里显示
@@ -521,7 +520,7 @@ function registerIpc() {
     setSettings({ headOffset: off || null }); // 走 setSettings：更新内存 + 落盘 + 广播
   });
   ipcMain.on('pet:headBroken', (e) => {
-    if (isFromPet(e)) setSettings({ head: null, headMode: 'photo' });
+    if (isFromPet(e)) setSettings({ head: null, headMode: 'cartoon' }); // 头像打不开：回到默认的 Q 版猫头
   });
   ipcMain.on('pet:status', (e, s) => {
     if (!isFromPet(e) || !s) return;
@@ -536,25 +535,24 @@ function registerIpc() {
     return true;
   });
 
-  async function pickHead(e, kind) {
+  async function pickHead(e) {
     if (!isFromPanel(e)) return null;
-    const isVideo = kind === 'video';
     let r;
     try {
       r = await dialog.showOpenDialog(panelWin, {
-        title: isVideo ? '选择视频头像（循环播放，声音静音）' : '选择图片头像（PNG / JPG / GIF 均可，GIF 和动态 PNG 会动）',
-        defaultPath: startingDir(isVideo ? 'lastVideoDir' : 'lastImageDir', safeGetPath(isVideo ? 'videos' : 'pictures')),
+        title: '选择图片头像（PNG / JPG / GIF / 动态 PNG 均可，GIF 和动态 PNG 会动）',
+        defaultPath: startingDir('lastImageDir', safeGetPath('pictures')),
         properties: ['openFile'],
-        filters: [isVideo ? { name: '视频', extensions: VIDEO_PICK_EXTS } : { name: '图片', extensions: IMAGE_PICK_EXTS }],
+        filters: [{ name: '图片', extensions: IMAGE_PICK_EXTS }],
       });
     } catch (err) {
       // 个别系统的默认目录打不开：退回用户目录再试一次
       try {
         r = await dialog.showOpenDialog(panelWin, {
-          title: isVideo ? '选择视频头像' : '选择图片头像',
+          title: '选择图片头像',
           defaultPath: safeGetPath('home'),
           properties: ['openFile'],
-          filters: [isVideo ? { name: '视频', extensions: VIDEO_PICK_EXTS } : { name: '图片', extensions: IMAGE_PICK_EXTS }],
+          filters: [{ name: '图片', extensions: IMAGE_PICK_EXTS }],
         });
       } catch (err2) {
         return { error: `选择窗口打开失败：${err2.message}` };
@@ -563,8 +561,7 @@ function registerIpc() {
     if (r.canceled || !r.filePaths[0]) return null;
     return importHead(e, r.filePaths[0], path.dirname(r.filePaths[0]));
   }
-  ipcMain.handle('head:pick', (e) => pickHead(e, 'image'));
-  ipcMain.handle('head:pickVideo', (e) => pickHead(e, 'video'));
+  ipcMain.handle('head:pick', (e) => pickHead(e));
   ipcMain.handle('head:paste', async (e) => {
     if (!isFromPanel(e)) return { error: '来源无效' };
     const image = clipboard.readImage();
@@ -575,7 +572,7 @@ function registerIpc() {
     await fsp.writeFile(head, image.toPNG());
     return setSettings({ head, headMode: 'photo' }, e.sender);
   });
-  ipcMain.handle('head:reset', (e) => (isFromPanel(e) ? setSettings({ head: null, headMode: 'photo' }, e.sender) : null));
+  ipcMain.handle('head:reset', (e) => (isFromPanel(e) ? setSettings({ head: null, headMode: 'cartoon' }, e.sender) : null));
   ipcMain.handle('voice:pick', async (e) => {
     if (!isFromPanel(e)) return null;
     const r = await dialog.showOpenDialog(panelWin, {

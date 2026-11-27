@@ -8,11 +8,10 @@
   const els = {
     hookChip: $('#hookChip'), fpsDot: $('#fpsDot'), fpsVal: $('#fpsVal'), modeVal: $('#modeVal'),
     perm: $('#perm'), permText: $('#permText'), btnPermOpen: $('#btnPermOpen'), btnRetry: $('#btnRetry'), btnPermFix: $('#btnPermFix'),
-    btnHeadMode: $('#btnHeadMode'), headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
+    headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
     headScale: $('#headScale'), headScaleVal: $('#headScaleVal'), petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
     sfxVolume: $('#sfxVolume'), sfxVolumeVal: $('#sfxVolumeVal'),
     switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
-    voiceEaster: $('[data-key="voiceEaster"]'), easterWrap: $('#easterWrap'),
     privacyStatus: $('#privacyStatus'), privacyReason: $('#privacyReason'), privacyCapabilities: $('#privacyCapabilities'),
     toast: $('#toast'),
   };
@@ -172,13 +171,11 @@
     const d = state.data;
     if (!d) return;
     const s = d.settings;
-    const r = VOICE.resolve({ headMode: s.headMode, headType: d.meta.headType, voiceEaster: s.voiceEaster, hasVoice: !!d.meta.voiceSrc });
+    const r = VOICE.resolve({ hasVoice: !!d.meta.voiceSrc });
     for (const b of $$('[data-body]')) pressed(b, b.dataset.body === s.body);
     for (const b of $$('[data-kb-dir]')) pressed(b, b.dataset.kbDir === (s.kbDir || 'reverse'));
-    pressed(els.btnHeadMode, s.headMode === 'photo');
     pressed(els.btnAngryLine, s.angryLine === true);
-    const kind = s.headMode === 'cartoon' ? 'Q 版猫头' : d.meta.headType === 'video' ? '视频' : '图片';
-    els.headName.textContent = s.headMode === 'cartoon' ? `当前：${kind}` : `当前：${d.meta.headName || '默认头像'}（${kind}）`;
+    els.headName.textContent = s.headMode === 'cartoon' ? '当前：Q 版猫头' : `当前：${d.meta.headName || '默认头像'}（${d.meta.headType === 'video' ? '视频' : '图片'}）`;
     els.headName.title = els.headName.textContent;
     els.headScale.value = s.headScale;
     els.headScaleVal.textContent = `${Math.round(s.headScale * 100)}%`;
@@ -187,19 +184,14 @@
     els.sfxVolume.value = s.sfxVolume;
     els.sfxVolumeVal.textContent = `${Math.round(s.sfxVolume * 100)}%`;
     for (const c of $$('[data-key]')) c.checked = !!s[c.dataset.key];
-    els.voiceEaster.disabled = !r.easterEnabled;
-    els.easterWrap.classList.toggle('off', !r.easterEnabled);
-    els.voiceEaster.title = r.easterEnabled ? VOICE.EASTER_TITLE.video
-      : (s.headMode === 'cartoon' ? VOICE.EASTER_TITLE.cartoon : VOICE.EASTER_TITLE.image);
-    els.easterWrap.title = els.voiceEaster.title;
     els.switchSound.disabled = !s.keySfx || s.sfxOn === false;
     els.switchSound.title = s.keySfx && s.sfxOn !== false ? '' : s.sfxOn === false ? '「音效」开关已关闭' : '先勾选「键盘音效」才会出声';
     els.switchSound.value = s.switchSound;
     els.desk.value = s.desk;
-    els.voiceName.textContent = r.source === 'video' ? '视频原声' : (d.meta.voiceName || '合成音效');
-    els.voiceName.title = r.source === 'video'
-      ? '触发时播放视频原声；关闭原声彩蛋后使用导入配音或合成音效'
-      : (d.meta.voiceName ? `触发时播放：${d.meta.voiceName}` : '触发时使用合成音效；可导入自己的音频');
+    els.voiceName.textContent = d.meta.voiceName || '合成音效';
+    els.voiceName.title = d.meta.voiceName
+      ? `生气触发时播放导入配音：${d.meta.voiceName}`
+      : '生气触发时使用合成音效；可导入自己的配音';
     els.btnClearVoice.hidden = !d.meta.voiceName;
     // 作者信息始终隐藏，不渲染主进程可能携带的名字、头像或链接。
     $('#aboutRow').hidden = true;
@@ -222,10 +214,8 @@
   for (const b of $$('[data-act]')) bind(b, 'click', () => api.action(b.dataset.act));
   bind(els.btnFrenzy, 'click', () => api.action('frenzy'));
   bind(els.btnAngryLine, 'click', () => set({ angryLine: state.data.settings.angryLine !== true }));
-  bind(els.btnHeadMode, 'click', () => set({ headMode: state.data.settings.headMode === 'photo' ? 'cartoon' : 'photo' }));
   bind($('#btnPickHead'), 'click', () => applyResult(() => api.pickHead(), (d) => `已换成图片头像：${d.meta.headName}`));
-  bind($('#btnPickHeadVideo'), 'click', () => applyResult(() => api.pickHeadVideo(), (d) => `已换成视频头像：${d.meta.headName}`));
-  bind($('#btnResetHead'), 'click', () => applyResult(() => api.resetHead(), () => '已还原为默认头像'));
+  bind($('#btnResetHead'), 'click', () => applyResult(() => api.resetHead(), () => '已还原为默认头像（Q 版猫头）'));
   bind($('#btnResetHeadPos'), 'click', async () => { await set({ headOffset: null }); toast('头像位置已归位'); });
   for (const c of $$('[data-key]')) bind(c, 'change', () => set({ [c.dataset.key]: c.checked }));
   bind(els.switchSound, 'change', () => set({ switchSound: els.switchSound.value }));

@@ -38,10 +38,8 @@
       </section>
 
       <section class="row"><span class="lab">头像</span>
-        <button class="pill" id="btnHeadMode" aria-pressed="false" title="开启使用自定义头像；关闭使用 Q 版猫头">使用自定义头像</button>
         <button class="pill" id="btnPickHead" title="选择图片即生效；支持 PNG / JPG / GIF / 动态 PNG，也可按 ⌘V / Ctrl+V 粘贴图片">选图片</button>
-        <button class="pill" id="btnPickHeadVideo" title="选择视频即生效，静音循环播放；触发时可播放原声">选视频</button>
-        <button class="pill" id="btnResetHead" title="恢复内置默认头像">还原默认头像</button>
+        <button class="pill" id="btnResetHead" title="恢复默认：清掉导入的图片，回到 Q 版猫头">还原默认头像</button>
         <span class="note full" id="headName"></span>
       </section>
 
@@ -82,11 +80,10 @@
       </section>
 
       <section class="row"><span class="lab">配音</span>
-        <label class="chk" id="easterWrap"><input type="checkbox" data-key="voiceEaster">视频原声彩蛋</label>
         <span class="voice" id="voiceWrap">当前声音：<em id="voiceName">合成音效</em></span>
-        <button class="pill" id="btnPickVoice" title="导入 mp3 / m4a / wav，触发时使用；启用视频原声时原声优先">导入配音</button>
+        <button class="pill" id="btnPickVoice" title="导入 mp3 / m4a / wav，生气触发时播放">导入配音</button>
         <button class="pill ghost" id="btnClearVoice" hidden>清除配音</button>
-        <span class="note full">原声彩蛋仅对视频头像可用；图片或 Q 版猫头时置灰并保留选项。切换声音来源会停止上一段声音；台词开关不影响声音来源。</span>
+        <span class="note full">生气触发时播放导入的配音；没有导入就用合成音效。台词开关不影响声音。</span>
       </section>
 
       <section class="row privacy-row"><span class="lab">隐私</span>

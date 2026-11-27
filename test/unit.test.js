@@ -48,38 +48,15 @@ test('键盘图上没有的键有兜底位置，未知的返回 null', () => {
   assert.ok(kbd.includes('data-k="2"') && kbd.includes('data-k="0"'));
 });
 
-// ---------- 配音联动：头像 × 原声彩蛋 × 导入配音 的全部组合 ----------
-test('原声彩蛋只对视频头像可用', () => {
-  for (const headMode of ['photo', 'cartoon']) {
-    for (const headType of ['image', 'video']) {
-      const r = VOICE.resolve({ headMode, headType, voiceEaster: true, hasVoice: false });
-      assert.equal(r.easterEnabled, headMode === 'photo' && headType === 'video', `${headMode}/${headType}`);
-    }
-  }
-});
-
-test('触发时播放什么：视频原声 > 导入配音 > 合成音效', () => {
-  const cases = [
-    // [headMode, headType, voiceEaster, hasVoice, 期望]
-    ['photo', 'video', true, false, 'video'],   // 视频头像 + 勾选：播视频原声
-    ['photo', 'video', true, true, 'video'],    // 原声优先于导入配音
-    ['photo', 'video', false, true, 'voice'],   // 取消勾选：播导入的配音
-    ['photo', 'video', false, false, 'synth'],  // 都没有：合成音效
-    ['photo', 'image', true, true, 'voice'],    // 图片头像：彩蛋无效，播配音
-    ['photo', 'image', false, true, 'voice'],
-    ['photo', 'image', true, false, 'synth'],
-    ['cartoon', 'video', true, true, 'voice'],  // Q 版猫头显示时视频不参与，彩蛋无效
-    ['cartoon', 'video', true, false, 'synth'],
-    ['cartoon', 'image', true, true, 'voice'],
-  ];
-  for (const [headMode, headType, voiceEaster, hasVoice, expected] of cases) {
-    assert.equal(VOICE.resolve({ headMode, headType, voiceEaster, hasVoice }).source, expected, `${headMode}/${headType}/${voiceEaster}/${hasVoice}`);
-  }
+// ---------- 配音联动：有导入配音就播配音，否则合成音效（原声彩蛋已随「选视频」移除） ----------
+test('配音来源：导入配音优先，没有就用合成音效', () => {
+  assert.deepEqual(VOICE.resolve({ hasVoice: true }), { easterEnabled: false, source: 'voice' });
+  assert.deepEqual(VOICE.resolve({ hasVoice: false }), { easterEnabled: false, source: 'synth' });
 });
 
 // ---------- 设置校验：渲染进程传什么都不会把配置写坏 ----------
 test('设置的默认值完整，非法输入全部丢弃', () => {
-  assert.equal(DEFAULTS.desk, 'transparent'); // 默认透明背景
+  assert.equal(DEFAULTS.desk, 'bluewhite'); // 默认蓝白桌面
   assert.equal(DEFAULTS.sticker, true);
   assert.deepEqual(sanitize({ body: 'x', desk: 'rainbow', switchSound: 3, headScale: 'big' }), {});
   assert.deepEqual(sanitize(null), {});

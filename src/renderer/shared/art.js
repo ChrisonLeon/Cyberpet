@@ -8,7 +8,7 @@
 
   const TORSO_PATH = 'M14 114 C 4 70, 26 18, 80 14 C 134 18, 156 70, 146 114 C 122 122, 38 122, 14 114 Z';
   // 尾巴和身子共用 SVG / 贴纸底。两段设计贝塞尔在接点共用竖直切线，始终向上呈 S 形。
-  // 所有控制点都在 [16.5,223.5] × [16.5,115.5] 内：凸包性质保证最宽 23 的圆头描边不出界。
+  // 所有控制点都在 [16.5,223.5] × [16.5,115.5] 内：凸包性质保证最宽 18 的圆头描边不出界。
   const TAIL_ROOT = [118, 88];
 
   /**
@@ -60,11 +60,11 @@
   </radialGradient>
   <clipPath id="torsoClip"><path d="${TORSO_PATH}"/></clipPath>
 </defs>
-<path id="tailSil" class="sil tail-stroke" fill="none" stroke="#fff" stroke-width="23" stroke-linecap="round"/>
-<path id="tailColor" class="tail-stroke" fill="none" stroke="var(--tail)" stroke-width="20" stroke-linecap="round"/>
-<path id="tailTipC" class="tail-stroke" fill="none" stroke="var(--tail-tip)" stroke-width="20" stroke-linecap="round"/>
+<path id="tailSil" class="sil tail-stroke" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+<path id="tailColor" class="tail-stroke" fill="none" stroke="var(--tail)" stroke-width="15" stroke-linecap="round"/>
+<path id="tailTipC" class="tail-stroke" fill="none" stroke="var(--tail-tip)" stroke-width="15" stroke-linecap="round"/>
 <!-- 尾巴画在身子前面一层（SVG 后画的在上）：先尾巴后身子，尾巴从身后探出来，不会压在肚子上 -->
-<g class="sil"><path d="${TORSO_PATH}" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></g>
+<g class="sil"><path d="${TORSO_PATH}" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></g>
 <path d="${TORSO_PATH}" fill="url(#torsoShade)"/>
 ${['bluewhite', 'orange', 'cream'].includes(variant) ? `<g clip-path="url(#torsoClip)" fill="var(--patch)">
   <path d="M14 114 C 4 70, 26 18, 80 14 C 76 46, 68 74, 64 120 L 14 114 Z"/>
@@ -96,9 +96,9 @@ ${BELL}`;
 </g>`;
     return `
 <g class="sil">
-  <path d="M34 58 L 25 10 Q 24 2 31 6 L 70 30 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M126 58 L 135 10 Q 136 2 129 6 L 90 30 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
-  <circle cx="80" cy="94" r="60" fill="#fff" stroke="#fff" stroke-width="3"/>
+  <path d="M34 58 L 25 10 Q 24 2 31 6 L 70 30 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M126 58 L 135 10 Q 136 2 129 6 L 90 30 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="80" cy="94" r="60" fill="#fff" stroke="#fff" stroke-width="2"/>
 </g>
 <path class="ear" d="M34 58 L 25 10 Q 24 2 31 6 L 70 30 Z"/>
 <path class="ear" d="M126 58 L 135 10 Q 136 2 129 6 L 90 30 Z"/>
@@ -152,7 +152,7 @@ ${eye(57)}${eye(103)}
       });
     });
     return `
-<rect class="sil" x="1" y="1" width="298" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="3"/>
+<rect class="sil" x="1" y="1" width="298" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="2"/>
 <rect class="kb-case" x="1" y="1" width="298" height="108" rx="11"/>
 <rect class="kb-plate" x="3.6" y="3.6" width="292.8" height="102.8" rx="8"/>${keys}`;
   }

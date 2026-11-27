@@ -98,7 +98,7 @@ async function runSelfTest(ctx) {
       + " return JSON.stringify({ dLive: (t ? t.getAttribute('d') : 'null').slice(0, 120),"
       + " dFresh: window.BXC_ART.tailPathD(0, 0).d.slice(0, 120),"
       + " rest: JSON.stringify(window.BXC_ART.TAIL_REST || 'none') }); })()");
-    check(l.desk === 'transparent' && l.pad === 'none' && l.kb === 'block', '默认应当是透明桌面（只有键盘和鼠标）');
+    check(l.desk === 'bluewhite' && l.pad === 'block' && l.kb === 'block', '默认应当是蓝白桌面（键盘可见）');
     // 面板默认视图应当一屏放下，不出滚动条（授权横幅出现时内容变多，允许滚动）
     summary.panelLayout = await js(panel, "(() => { const footers = document.querySelectorAll('footer');"
       + " const footer = footers[footers.length - 1]; const perm = document.getElementById('perm');"
@@ -113,16 +113,22 @@ async function runSelfTest(ctx) {
     check(pl.titlebarDrag === 'drag' && pl.collapseNoDrag === 'no-drag', `标题栏拖拽区域不对（${pl.titlebarDrag}/${pl.collapseNoDrag}）`);
     // 无论有没有授权横幅（横幅出现时窗口会自动扩高），内容都必须一屏放下
     check(pl.header + pl.content + pl.footer <= pl.win + 2, `面板视图超出一屏（需要 ${pl.header + pl.content + pl.footer}px，窗口 ${pl.win}px）`);
+    check(pl.header + pl.content - pl.permH + pl.footer <= pl.win + 2, `面板无横幅视图超出一屏（需要 ${pl.header + pl.content - pl.permH + pl.footer}px，窗口 ${pl.win}px）`);
     log(`面板自然高度（无授权横幅）${pl.header + pl.content - pl.permH + pl.footer}px`);
     await shot('01-panel', panel);
     await js(pet, "document.documentElement.style.background = 'linear-gradient(135deg, #d5e0f2, #8ea3c6)'; 1"); // 后续截图垫一层底色
   });
 
   await step('hit-test', async () => { // 透明区域点击穿透，画了东西的地方可以交互
-    for (const [x, y, want] of [[214, 150, false], [4, 4, true], [20, 120, true], [214, 330, false], [214, 262, false], [70, 300, true]]) {
+    for (const [x, y, want] of [[214, 150, false], [4, 4, true], [20, 120, true], [214, 330, false], [214, 262, false], [8, 300, true]]) {
       pet.webContents.sendInputEvent({ type: 'mouseMove', x, y });
       await sleep(80);
-      check(ignore() === want, `鼠标在 ${x},${y}：穿透=${ignore()}，应为 ${want}`);
+      const hit = ignore() === want;
+      if (!hit) {
+        const el = await js(pet, `(() => { const n = document.elementFromPoint(${x}, ${y}); return n ? (n.id || n.tagName) + '|' + (n.closest('[data-drag]')?.id || 'none') : 'null'; })()`);
+        check(false, `鼠标在 ${x},${y}：穿透=${ignore()}，应为 ${want}（命中 ${el}）`);
+      }
+      check(hit, `鼠标在 ${x},${y}：穿透=${ignore()}，应为 ${want}`);
     }
     // 鼠标与键盘之间取「在同侧能看见的间隙」（鼠标可能在键盘左或右，另一侧算出来是负数）。
     // 用 computed style 的 left/width：getBoundingClientRect 会把 rotateX 投影后的放大也算进去，
@@ -397,7 +403,7 @@ async function runSelfTest(ctx) {
   });
 
   // ---------- 真实的导入流程（之前「导入后没变化」的 bug 就出在这里）----------
-  if (!hasFixtures) { skip('没有测试素材（BXC_PET_FIXTURES），跳过导入与配音联动共 9 步'); }
+  if (!hasFixtures) { skip('没有测试素材（BXC_PET_FIXTURES），跳过导入与配音联动共 3 步'); }
   await step('import-image', async () => {
     if (!hasFixtures) throw new SkipError();
     const r = await importHead(fix('head.png'));
@@ -405,26 +411,11 @@ async function runSelfTest(ctx) {
     check(r.meta.headType === 'image', '应当识别为图片头像');
     await sleep(400);
     const img = JSON.parse(await js(pet, "JSON.stringify({ ok: document.getElementById('headImg').complete && document.getElementById('headImg').naturalWidth > 0,"
-      + " shown: getComputedStyle(document.getElementById('headImg')).display, video: getComputedStyle(document.getElementById('headVideo')).display })"));
-    check(img.ok && img.shown === 'block' && img.video === 'none', `图片头像没有显示（${JSON.stringify(img)}）`);
+      + " shown: getComputedStyle(document.getElementById('headImg')).display, video: getComputedStyle(document.getElementById('headVideo')).display,"
+      + " anim: document.body.dataset.anim })"));
+    check(img.ok && img.video === 'none', `图片头像没有显示（${JSON.stringify(img)}）`);
+    check(img.anim === 'static', '图片头像平时应停在静态首帧');
     await shot(`${String(n++).padStart(2, '0')}-import-image`);
-  });
-
-  await step('import-video', async () => {
-    if (!hasFixtures) throw new SkipError();
-    const r = await importHead(fix('clip.mp4'));
-    check(r.meta.headType === 'video', '应当识别为视频头像');
-    await sleep(900);
-    const videoState = async () => JSON.parse(await js(pet, "(() => { const v = document.getElementById('headVideo'); return JSON.stringify({ paused: v.paused, ready: v.readyState, muted: v.muted, dur: v.duration,"
-      + " shown: getComputedStyle(v).display, img: getComputedStyle(document.getElementById('headImg')).display }); })()"));
-    const v = await videoState();
-    summary.video = v;
-    check(v.paused && v.ready >= 2, `视频头像应当停在首帧，不自动播放（${JSON.stringify(v)}）`);
-    check(v.shown === 'block' && v.img === 'none', '视频头像和图片头像必须互斥');
-    check(v.muted === true, '换上视频头像不应自动出声（只在生气/暴躁触发时播）');
-    await shot(`${String(n++).padStart(2, '0')}-import-video`);
-    await sleep(400);
-    check((await videoState()).paused === true, '等待期间视频也应当保持暂停');
   });
 
   // audioTried：确实发起了配音播放。CI 机器通常没有声卡，play() 会被拒绝，所以不能只看 paused。
@@ -436,86 +427,40 @@ async function runSelfTest(ctx) {
     sendAction('angry');
   };
 
-  await step('voice-video-original', async () => {
-    if (!hasFixtures) throw new SkipError(); // 视频头像 + 勾选原声彩蛋 → 播视频原声
-    await setSettings({ headMode: 'photo', voiceEaster: true });
-    await sleep(300);
-    trigger();
-    await sleep(90);
-    const s = await voiceState();
-    check(s.videoMuted === false, '触发时视频原声应当打开');
-    check(!s.hasAudio, '还没导入配音');
-    await sleep(1700); // 素材视频 1.2 秒，播完自动静音
-    check((await voiceState()).videoMuted === true, '原声播完后应当恢复静音');
-  });
-
-  await step('voice-video-wins', async () => {
-    if (!hasFixtures) throw new SkipError(); // 同时有导入配音：原声优先，配音不播
+  await step('voice-image-head', async () => { // 图片头像：平时静态首帧，触发时切动画并播导入的配音
+    if (!hasFixtures) throw new SkipError();
+    await setSettings({ head: null, headMode: 'photo' });
     const r = await importVoice(fix('voice.m4a'));
     check(r && r.meta.voiceName === 'voice.m4a', '配音没有导入成功');
     await sleep(300);
     trigger();
-    await sleep(350);
-    const s = await voiceState();
-    check(s.videoMuted === false && !played(s), `原声优先于导入配音（${JSON.stringify(s)}）`);
-    await sleep(1500);
-  });
-
-  await step('voice-easter-off-rage', async () => { // 视频头像 + 取消彩蛋 + 有导入配音：播配音，视频无声动画同步，不显示台词
-    if (!hasFixtures) throw new SkipError();
-    await setSettings({ voiceEaster: false });
-    await sleep(200);
-    await js(pet, "document.getElementById('speech').classList.remove('show'); 1");
-    trigger();
     await sleep(300);
     const s = await voiceState();
-    const sp = await js(pet, "document.getElementById('speech').classList.contains('show')");
-    check(played(s), `取消彩蛋应改播导入配音（${JSON.stringify(s)}）`);
-    check(s.videoMuted === true && !sp, `视频应保持静音、台词不应显示（${JSON.stringify(s)} speech=${sp}）`);
-    await sleep(900);
-  });
-
-  await step('voice-preview-on-enable', async () => {
-    if (!hasFixtures) throw new SkipError(); // 重新勾选彩蛋也不自动播放：只有生气/暴躁触发时才播
-    await setSettings({ voiceEaster: true });
-    await sleep(400);
-    const s = await voiceState();
-    check(s.videoMuted === true, `勾选原声彩蛋不应立刻试听（${JSON.stringify(s)}）`);
-    trigger();
-    await sleep(90);
-    check((await voiceState()).videoMuted === false, '勾选彩蛋后触发时仍应播原声');
-    await sleep(1700); // 素材视频 1.2 秒，播完自动静音
-    check((await voiceState()).videoMuted === true, '原声播完后应当恢复静音');
-  });
-
-  await step('voice-image-head', async () => {
-    if (!hasFixtures) throw new SkipError(); // 图片头像：原声彩蛋无效，播导入的配音
-    await setSettings({ head: null, headMode: 'photo', voiceEaster: true });
-    await sleep(400);
-    trigger();
-    await sleep(300);
-    const s = await voiceState();
-    check(s.videoMuted === true && played(s), `图片头像应当播导入的配音（${JSON.stringify(s)}）`);
-    await sleep(900);
+    check(played(s), `图片头像应当播导入的配音（${JSON.stringify(s)}）`);
+    check(await js(pet, "document.body.dataset.anim") === 'play', '触发时图片头像应切到动画');
+    await shot(`${String(n++).padStart(2, '0')}-voice-image-head`);
+    await sleep(3200); // 等触发窗口结束
+    check(await js(pet, "document.body.dataset.anim") === 'static', '触发结束后应回到静态首帧');
     await setSettings({ voice: null });
     await sleep(200);
     trigger(); // 什么都没有：合成音效，不能出错
     await sleep(200);
     const none = await voiceState();
-    check(!none.hasAudio && none.videoMuted && !played(none), '清除配音后回到合成音效');
+    check(!none.hasAudio && !played(none), '清除配音后回到合成音效');
+    await sleep(2800);
   });
 
   await step('import-prune', async () => {
     if (!hasFixtures) throw new SkipError(); // 只保留最近的 10 个，正在用的不删
-    for (let i = 0; i < 14; i++) await importHead(fix(i % 2 ? 'head.png' : 'clip.mp4'));
+    for (let i = 0; i < 14; i++) await importHead(fix('head.png'));
     const files = fs.readdirSync(path.join(userDataDir, 'heads'));
     check(files.length <= 10, `头像目录应当不超过 10 个文件（${files.length}）`);
     check(fs.existsSync(getSettings().head), '当前使用的头像文件必须存在');
-    await setSettings({ head: null, voice: null, voiceEaster: true });
+    await setSettings({ head: null });
   });
 
-  await step('rage-mode', async () => { // 未勾选原声彩蛋：不显示台词也不播音，逐渐暴躁疯狂打字
-    await setSettings({ voiceEaster: false, head: null, headMode: 'photo', headLock: true, voice: null });
+  await step('rage-mode', async () => { // 没有导入配音：不显示台词也不播音，逐渐暴躁疯狂打字
+    await setSettings({ head: null, headMode: 'photo', headLock: true, voice: null });
     await sleep(300);
     await js(pet, "document.getElementById('speech').classList.remove('show'); document.querySelectorAll('.kcap').forEach(n => n.remove()); 1"); // 清掉上一步残留的气泡和台词
     const bubblesBefore = await js(pet, "document.querySelectorAll('.kcap').length");
@@ -525,23 +470,12 @@ async function runSelfTest(ctx) {
       + " bubbles: document.querySelectorAll('.kcap').length, angry: document.body.classList.contains('angry') })"));
     const vs = await voiceState();
     check(r.angry === true, '暴躁模式应有生气表情');
-    check(r.speech === false, `未勾选彩蛋时不应显示台词（${JSON.stringify(r)}）`);
+    check(r.speech === false, `台词开关关闭时不应显示台词（${JSON.stringify(r)}）`);
     check(r.bubbles > bubblesBefore + 2, `暴躁时应疯狂击打键盘（气泡 ${bubblesBefore}→${r.bubbles}）`);
-    check(vs.audioTried === false && !vs.audioPlaying, `未勾选彩蛋时不应播放任何声音（${JSON.stringify(vs)}）`);
+    check(vs.audioTried === false && !vs.audioPlaying, `没有配音时不应播放媒体声音（${JSON.stringify(vs)}）`);
     await shot('07-rage');
     summary.statusRage = { ...status() };
     await sleep(2600);
-    await setSettings({ voiceEaster: true });
-    await sleep(200);
-  });
-  await step('head-broken', async () => {
-    if (!hasFixtures) throw new SkipError(); // 视频文件打不开 → 自动换回内置头，不留黑框
-    const broken = path.join(dir, 'broken.mp4');
-    fs.copyFileSync(fix('head.png'), broken); // 伪装成视频的图片：解码必然失败
-    const r = await importHead(broken);
-    check(r.meta.headType === 'video', '占位检查：按扩展名先当成视频');
-    await sleep(900);
-    check(getSettings().head === null, '视频打不开时应当自动回到内置头');
   });
 
   // ---------- 平台：标签和键盘刻字按平台来 ----------
@@ -561,10 +495,12 @@ async function runSelfTest(ctx) {
   });
 
   await step('panel', async () => {
-    await setSettings({ head: null, headMode: 'photo', voice: null, keySfx: true, desk: 'transparent' });
+    await setSettings({ head: null, headMode: 'cartoon', voice: null, keySfx: true, desk: 'transparent' });
     await sleep(300);
-    const a = JSON.parse(await js(panel, "JSON.stringify({ dirs: document.querySelectorAll('[data-dir]').length, easterDisabled: document.querySelector('[data-key=\"voiceEaster\"]').disabled,"
-      + " off: document.getElementById('easterWrap').classList.contains('off'), soundDisabled: document.getElementById('switchSound').disabled, head: document.getElementById('headName').textContent,"
+    const a = JSON.parse(await js(panel, "JSON.stringify({ dirs: document.querySelectorAll('[data-dir]').length,"
+      + " headBtns: document.querySelectorAll('#btnPickHead, #btnResetHead').length,"
+      + " videoBtnGone: !document.getElementById('btnPickHeadVideo'), easterGone: !document.querySelector('[data-key=\"voiceEaster\"]'),"
+      + " sfxOn: !!document.querySelector('[data-key=\"sfxOn\"]'), soundDisabled: document.getElementById('switchSound').disabled, head: document.getElementById('headName').textContent,"
       + " about: document.getElementById('aboutText').textContent })"));
     summary.panel = a;
     check(a.dirs === 0, '素材目录配置应当已经去掉');
@@ -573,7 +509,9 @@ async function runSelfTest(ctx) {
     check((await js(panel, "!!document.getElementById('privacyStatus')")) === true, '应当有隐私实际状态显示');
     check((await js(panel, "!!document.getElementById('petScale')")) === true, '应当有整体大小滑块');
     check((await js(panel, "!!document.querySelector('[data-key=\"headLock\"]')")) === true, '应当有锁定头像位置复选框');
-    check(a.easterDisabled === true && a.off === true, '图片头像时「原声彩蛋」应当置灰不可点');
+    check(a.videoBtnGone === true && a.easterGone === true, '「选视频」和「原声彩蛋」应当已经移除');
+    check(a.sfxOn === true, '应当有音效总开关');
+    check(a.headBtns === 2, '头像行应当只剩 选图片/还原默认头像 两个按钮');
     check(a.soundDisabled === false, '键盘音效开着时轴体应当可选');
     check(a.head.includes('当前：'), '没有显示当前头像');
     const aboutHidden = await js(panel, "document.getElementById('aboutRow').hidden");

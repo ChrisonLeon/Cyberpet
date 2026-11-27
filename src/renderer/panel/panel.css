@@ -3,7 +3,7 @@
 html, body { width: 100%; height: 100%; margin: 0; background: transparent; overflow: hidden; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
-  font-size: 13.5px; color: #27304a; -webkit-user-select: none; user-select: none;
+  font-size: 15px; color: #27304a; -webkit-user-select: none; user-select: none;
 }
 #card {
   width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden;
@@ -18,12 +18,12 @@ header {
 /* 整个标题栏（含右侧空白）都可拖窗；状态条、按钮和下面的内容区除外。 */
 .titles { min-width: 0; -webkit-app-region: drag; }
 button, input, select, label, summary, main, .chips { -webkit-app-region: no-drag; }
-h1 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: .2px; }
-.titles p { margin: 3px 0 0; font-size: 12.5px; color: #69738c; line-height: 1.5; }
+h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: .2px; }
+.titles p { margin: 3px 0 0; font-size: 14px; color: #69738c; line-height: 1.5; }
 .chips { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 3px 9px; border-radius: 999px;
-  background: #f1f4fb; font-size: 13px; color: #5b6480; white-space: nowrap; font-style: normal;
+  background: #f1f4fb; font-size: 14px; color: #5b6480; white-space: nowrap; font-style: normal;
 }
 .chip i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #b5bccd; }
 .chip.ok { background: #eaf8ef; color: #257344; }
@@ -42,14 +42,14 @@ main {
 }
 .banner {
   display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; padding: 9px 12px;
-  border-radius: 10px; background: #fff7e0; border: 1px solid #ffe2a8; color: #7a4a00; font-size: 13px; line-height: 1.6;
+  border-radius: 10px; background: #fff7e0; border: 1px solid #ffe2a8; color: #7a4a00; font-size: 14.5px; line-height: 1.6;
 }
 .banner > span { flex: 1 1 300px; min-width: 0; overflow-wrap: anywhere; }
 .banner-actions, .button-group { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 9px 0; border-top: 1px dashed #e2e7f1; }
-.lab { flex: none; width: 32px; font-size: 12.5px; color: #69738c; }
+.lab { flex: none; width: 38px; font-size: 14.5px; color: #69738c; }
 .pill {
-  min-height: 30px; padding: 4px 11px; border-radius: 999px; border: 1px solid #e3e8f4; background: #fff; color: #39415a;
+  min-height: 33px; padding: 4px 11px; border-radius: 999px; border: 1px solid #e3e8f4; background: #fff; color: #39415a;
   font: inherit; line-height: 20px; cursor: pointer; box-shadow: 0 1px 2px rgba(20, 30, 60, .06); white-space: nowrap;
 }
 .pill:hover { border-color: #b9cdf7; background: #f5f8ff; }
@@ -57,33 +57,33 @@ main {
 .pill.on { background: #2f6fe0; border-color: transparent; color: #fff; box-shadow: 0 2px 6px rgba(47, 111, 224, .24); }
 .pill.hot.on { background: #cc3b36; box-shadow: 0 2px 6px rgba(204, 59, 54, .24); }
 .pill.ghost { border-style: dashed; box-shadow: none; }
-.note, .voice { font-size: 13px; color: #69738c; min-width: 0; overflow-wrap: anywhere; }
-.full { flex: 0 0 100%; width: 100%; margin: 0; padding-left: 40px; line-height: 1.6; }
+.note, .voice { font-size: 14.5px; color: #69738c; min-width: 0; overflow-wrap: anywhere; }
+.full { flex: 0 0 100%; width: 100%; margin: 0; padding-left: 46px; line-height: 1.6; }
 .voice em { font-style: normal; color: #39415a; font-weight: 600; }
 .chk { display: inline-flex; align-items: center; gap: 5px; padding: 3px 0; cursor: pointer; }
-.chk input { width: 15px; height: 15px; margin: 0; accent-color: #2f6fe0; }
+.chk input { width: 17px; height: 17px; margin: 0; accent-color: #2f6fe0; }
 .slider { display: inline-flex; align-items: center; gap: 6px; }
-.slider input { width: 112px; margin: 0; accent-color: #2f6fe0; }
-.slider b { min-width: 34px; font-size: 13px; color: #5b6480; }
+.slider input { width: 120px; margin: 0; accent-color: #2f6fe0; }
+.slider b { min-width: 40px; font-size: 14.5px; color: #5b6480; }
 .sel { display: inline-flex; align-items: center; gap: 6px; }
 .sel select {
-  height: 29px; max-width: 100%; padding: 0 7px; border-radius: 8px; border: 1px solid #e3e8f4; background: #fff; color: #39415a;
+  height: 33px; max-width: 100%; padding: 0 7px; border-radius: 8px; border: 1px solid #e3e8f4; background: #fff; color: #39415a;
   font: inherit;
 }
 .chk.off, .sel select:disabled { opacity: .5; }
 .chk.off, .chk input:disabled, .sel select:disabled { cursor: not-allowed; }
-.help { font-size: 12.5px; color: #69738c; line-height: 1.65; overflow-wrap: anywhere; }
-.capabilities { list-style: none; color: #5b6480; font-size: 12.5px; }
+.help { font-size: 14px; color: #69738c; line-height: 1.65; overflow-wrap: anywhere; }
+.capabilities { list-style: none; color: #5b6480; font-size: 14px; }
 .capabilities li { overflow-wrap: anywhere; }
 .diagnostics { border-top: 1px dashed #e2e7f1; padding: 10px 0 2px; }
 .diagnostics summary { color: #39415a; cursor: pointer; padding: 2px 0; }
-.diagnostics dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 7px 10px; font-size: 12.5px; }
+.diagnostics dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 7px 10px; font-size: 14px; }
 .diagnostics dt { color: #69738c; }
 .diagnostics dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
-footer { flex: 0 0 auto; padding: 8px 18px 10px; border-top: 1px solid #e8ecf5; font-size: 12px; line-height: 1.5; color: #69738c; }
+footer { flex: 0 0 auto; padding: 8px 18px 10px; border-top: 1px solid #e8ecf5; font-size: 13.5px; line-height: 1.5; color: #69738c; }
 #toast {
   position: fixed; left: 50%; bottom: 54px; z-index: 10; transform: translateX(-50%); max-width: calc(100% - 36px);
-  padding: 8px 14px; border-radius: 12px; background: rgba(30, 40, 70, .95); color: #fff; font-size: 13px;
+  padding: 8px 14px; border-radius: 12px; background: rgba(30, 40, 70, .95); color: #fff; font-size: 14px;
   overflow-wrap: anywhere; opacity: 0; transition: opacity .2s; pointer-events: none;
 }
 #toast.show { opacity: 1; }

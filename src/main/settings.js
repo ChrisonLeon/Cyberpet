@@ -16,11 +16,10 @@ const DEFAULTS = {
   keyBubbles: true,     // 按键气泡
   keySfx: true,         // 键盘音效
   sfxOn: true,          // 合成音效总开关（键盘音 / 生气 / 喵 / 呼噜）
-  sfxVolume: 0.55,      // 合成音效音量 0~1（配音与视频原声不受它控制）
-  voiceEaster: true,    // 原声彩蛋（只对视频头像有意义）
+  sfxVolume: 0.55,      // 合成音效音量 0~1（导入配音不受它控制）
   privacy: false,       // 隐私防截屏/录屏
   switchSound: 'mahjong',
-  desk: 'transparent',  // transparent 透明（默认，无桌垫）| bluewhite 蓝白桌面 | dark 暗夜 | none 无道具
+  desk: 'bluewhite',    // bluewhite 蓝白桌面（默认）| transparent 透明 | dark 暗夜 | none 无道具
   alwaysOnTop: true,
   petVisible: true,
   panelVisible: true,
@@ -41,7 +40,7 @@ const ENUMS = {
   desk: ['transparent', 'bluewhite', 'dark', 'none'],
   kbDir: ['reverse', 'forward'],
 };
-const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'sfxOn', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock', 'angryLine', 'installChecked'];
+const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'sfxOn', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock', 'angryLine', 'installChecked'];
 const PATHS = ['head', 'voice', 'lastImageDir', 'lastVideoDir', 'lastAudioDir'];
 
 function isPos(v) {

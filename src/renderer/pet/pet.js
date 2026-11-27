@@ -52,6 +52,7 @@
     stage: $('#stage'),
     body: document.body,
     headAnim: $('#headAnim'), headImg: $('#headImg'), headGhost: $('#headGhost'), headVideo: $('#headVideo'), cartoon: $('#headCartoon'),
+    headStatic: $('#headStatic'), headStaticGhost: $('#headStaticGhost'),
     torso: $('#torso'), tailSil: null, tailColor: null, tailTipC: null, bell: null, pawL: $('#pawL'), pawR: $('#pawR'),
     armL: $('#armL'), armR: $('#armR'), armLEdge: $('#armLEdge'), armREdge: $('#armREdge'),
     kb: $('#kb'), kbd: $('#kbd'), bubbles: $('#bubbles'), hearts: $('#hearts'),
@@ -66,7 +67,6 @@
   let privacy = { enabled: false, mode: 'off' };
   const inputStopped = () => privacy.mode === 'shield' || privacy.mode === 'hidden';
   let voiceEpoch = 0;
-  let voiceMetadata = null;
   const paw = {
     L: { x: PAW.L.rest[0], y: PAW.L.rest[1], tx: PAW.L.rest[0], ty: PAW.L.rest[1], press: 0, lastKey: -9, reach: 0 },
     R: { x: PAW.R.rest[0], y: PAW.R.rest[1], tx: PAW.R.rest[0], ty: PAW.R.rest[1], press: 0, lastKey: -9, reach: 0 },
@@ -78,7 +78,7 @@
     angryUntil: -9, anger: 0, lastAngerAt: -9,
     happyUntil: -9, lastInputAt: -9,
     petTilt: 0, lastSfx: -9, lastBubble: -9, lastHeart: -9, lastMeow: -9, lastPatLine: -9, lastTailKick: -9,
-    combo: [], voiceUntil: -9,
+    combo: [], voiceUntil: -9, animUntil: -9,
     rageUntil: -9, rageT0: -9, synthUntil: -9, // 暴躁动作、台词和声源互相独立
     fidget: null, // 闲时小动作：歪头 / 张望 / 抖耳朵 / 伸懒腰 / 挪窝
     fx: { lookX: 0, stretchY: 0, shiftX: 0, earWig: 0, tilt: 0 },
@@ -127,6 +127,7 @@
       clearKeyboard();
       mouseHeld.clear();
       el.body.classList.remove('mx-l', 'mx-r');
+      el.body.dataset.anim = 'static'; // 动态头像回到首帧快照
       stopAudio();
     } else if (wasStopped && cfg.settings && cfg.settings.headMode === 'photo' && cfg.meta.headType === 'video') {
       const v = el.headVideo; // 恢复后视频回到首帧，等下一次触发再播
@@ -139,6 +140,7 @@
     const m = payload.meta;
     const v = el.headVideo;
     el.body.dataset.media = m.headType;
+    el.body.dataset.anim = 'static'; // 图片头像一律先停在首帧快照
     cfg.headSrc = m.headSrc;
     if (m.headType === 'video') {
       const srcChanged = (v.getAttribute('src') || '') !== m.headSrc;
@@ -149,7 +151,7 @@
       }
       el.headImg.removeAttribute('src');
       el.headGhost.removeAttribute('src');
-      // 视频头像是「静态立绘」：停在首帧；台词/暴躁触发时才播一次（playOriginal / playVideoOnce）
+      // 旧版视频头像（已不可再选）：停在首帧，触发时才无声播一次（playVideoOnce）
       if (v.paused) {
         v.muted = true;
         try { v.currentTime = 0; } catch { /* 元数据未就绪 */ }
@@ -165,8 +167,19 @@
   }
 
   function voiceSource(s, m) {
-    return VOICE.resolve({ headMode: s.headMode, headType: m.headType, voiceEaster: s.voiceEaster, hasVoice: !!m.voiceSrc }).source;
+    return VOICE.resolve({ hasVoice: !!m.voiceSrc }).source;
   }
+
+  // 动态头像（GIF / APNG）平时只显示第 0 帧快照：把图片画到 canvas 上当静止立绘
+  function snapshotHead() {
+    if (el.body.dataset.media !== 'image' || !el.headImg.naturalWidth) return;
+    for (const c of [el.headStatic, el.headStaticGhost]) {
+      c.width = el.headImg.naturalWidth;
+      c.height = el.headImg.naturalHeight;
+      c.getContext('2d').drawImage(el.headImg, 0, 0);
+    }
+  }
+  el.headImg.addEventListener('load', snapshotHead);
 
   // 合成音效的总开关和音量（配音/视频原声是媒体元素，不归它管）
   function applySfxAudio() {
@@ -180,7 +193,7 @@
     const prevMeta = cfg.meta;
     const m = payload.meta;
     const mediaChanged = prev && (prev.headMode !== s.headMode || prevMeta.headType !== m.headType || prevMeta.headSrc !== m.headSrc);
-    const audioChanged = prev && (mediaChanged || prev.voiceEaster !== s.voiceEaster || prevMeta.voiceSrc !== m.voiceSrc);
+    const audioChanged = prev && (mediaChanged || prevMeta.voiceSrc !== m.voiceSrc);
     if (prev && prev.headLock !== s.headLock) { headMove = null; press = null; st.petTilt = 0; }
     if (audioChanged) stopAudio();
     cfg.settings = s;
@@ -434,8 +447,6 @@
 
   function stopAudio() {
     voiceEpoch++;
-    if (voiceMetadata) el.headVideo.removeEventListener('loadedmetadata', voiceMetadata);
-    voiceMetadata = null;
     st.voiceUntil = st.synthUntil = -9;
     el.headVideo.muted = true;
     el.voice.pause();
@@ -447,34 +458,7 @@
     applySfxAudio();
   }
 
-  // 视频头像的原声：从头播一遍（带声音），播完自动静音。
-  function playOriginal() {
-    if (inputStopped() || voiceSource(cfg.settings, cfg.meta) !== 'video') return false;
-    const v = el.headVideo;
-    const epoch = voiceEpoch;
-    const src = v.getAttribute('src');
-    try {
-      v.muted = false;
-      v.currentTime = 0;
-      v.play().catch(() => { if (epoch === voiceEpoch) v.muted = true; });
-      const dur = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
-      st.voiceUntil = st.t + (dur || 3);
-      if (!dur) {
-        voiceMetadata = () => {
-          voiceMetadata = null;
-          if (epoch === voiceEpoch && src === v.getAttribute('src') && !inputStopped() && !v.muted
-            && Number.isFinite(v.duration) && v.duration > 0) st.voiceUntil = st.t + v.duration;
-        };
-        v.addEventListener('loadedmetadata', voiceMetadata, { once: true });
-      }
-      return true;
-    } catch {
-      v.muted = true;
-      return false;
-    }
-  }
-
-  // 视频头像的「动一下」：无声播一次后停回首帧。带声音的版本是 playOriginal。
+  // 视频头像的「动一下」：无声播一次后停回首帧。旧版视频头像（已不可再选）兼容用。
   function playVideoOnce() {
     if (inputStopped() || !cfg.meta || cfg.meta.headType !== 'video') return false;
     const v = el.headVideo;
@@ -516,15 +500,21 @@
     st.rageT0 = now;
     springTailTip.kick(8);
     springSquash.kick(0.08);
-    // 台词只在选中「能别放屁吗」时显示；声音独立：视频头像+原声彩蛋=原声，否则导入配音，都没有=合成
+    // 台词只在选中「能别放屁吗」时显示；声音独立：有导入配音就播配音，没有就用合成音效
     if (s.angryLine) say(ANGRY_LINE, 2700, 'fire');
     const src = voiceSource(s, cfg.meta);
-    if (cfg.meta.headType === 'video' && s.headMode === 'photo') {
-      if (src === 'video') playOriginal();
-      else playVideoOnce(); // 无声动画与配音/合成音同步
+    if (s.headMode === 'photo' && cfg.meta.headType === 'image') {
+      // 动态头像（GIF/APNG）只在触发时播：切回动画本体，重新赋 src 让动画从头开始
+      el.body.dataset.anim = 'play';
+      const cur = el.headImg.getAttribute('src');
+      if (cur) el.headImg.src = cur;
+      const vd = src === 'voice' && Number.isFinite(el.voice.duration) && el.voice.duration > 0 ? el.voice.duration : 2.7;
+      st.animUntil = st.t + vd;
+    } else if (cfg.meta.headType === 'video' && s.headMode === 'photo') {
+      playVideoOnce(); // 旧版视频头像（已不可再选）：无声动画与配音/合成音同步
     }
     if (src === 'voice') playVoice();
-    else if (src !== 'video') sfx.angry();
+    else sfx.angry();
   }
 
   function pat(x, y) {
@@ -742,6 +732,10 @@
       if (!el.headVideo.paused) { el.headVideo.pause(); try { el.headVideo.currentTime = 0; } catch { /* 已重置 */ } }
       st.voiceUntil = -9;
     }
+    // 动态图片头像：触发窗口结束，回到第 0 帧快照
+    if (el.body.dataset.media === 'image' && el.body.dataset.anim === 'play' && t > st.animUntil) {
+      el.body.dataset.anim = 'static';
+    }
 
     // 自动打字：试试打字 / 高速暴走 / 暴躁（未勾选彩蛋时的触发反应，速度越打越快）
     let rate = st.frenzy ? 0.055 : (t < st.demoUntil ? 0.13 : 0);
@@ -826,7 +820,7 @@
     if (st.frenzy !== el.body.classList.contains('frenzy')) el.body.classList.toggle('frenzy', st.frenzy);
   }
 
-  // 胳膊：平时自然下垂微弯；伸爪够鼠标时肘部向外弓（法线朝身体外侧），像探身去拍
+  // 胳膊：平时自然下垂微弯；伸爪够鼠标时肘部向外抬（法线朝身体外侧、向上弓），像人探身去拿
   function armPath(arm, hand, from, x, y) {
     const reach = paw[hand].reach;
     const dx = x - from[0];
@@ -835,8 +829,9 @@
     const out = hand === 'L' ? -1 : 1;
     let nx = -dy / len, ny = dx / len; // 与肩→爪连线垂直的两个方向，取 x 分量朝外的那一个
     if (nx * out < 0 || (nx === 0 && ny * out < 0)) { nx = -nx; ny = -ny; }
-    const mx = (from[0] + x) / 2 + nx * 26 * reach;
-    const my = Math.max(from[1], y) + 12 - 14 * reach + ny * 26 * reach;
+    const bend = 58 * reach; // 二次曲线的视觉弓高约是控制点偏移的一半，58 约能看到 29px 的肘弯
+    const mx = (from[0] + x) / 2 + nx * bend;
+    const my = (from[1] + y) / 2 + 12 * (1 - reach) + ny * bend;
     arm.setAttribute('d', `M${from[0]} ${from[1]} Q${mx.toFixed(1)} ${my.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`);
   }
 

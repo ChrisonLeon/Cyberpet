@@ -8,7 +8,6 @@ contextBridge.exposeInMainWorld('panel', {
   set: (patch) => invoke('settings:set', patch),
   action: (name) => invoke('action', name),
   pickHead: () => invoke('head:pick'),
-  pickHeadVideo: () => invoke('head:pickVideo'),
   openUrl: (url) => invoke('open:url', url),
   pasteHead: () => invoke('head:paste'),
   resetHead: () => invoke('head:reset'),
