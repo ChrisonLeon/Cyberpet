@@ -10,8 +10,8 @@
   <div id="card">
     <header id="titlebar">
       <div class="titles">
-        <h1>Cyberpet <span>·</span> 白小纯头身分离工坊</h1>
-        <p>小黑猫 / 蓝白猫 / 卫衣人偶下半身 + 白小纯真人抠头（支持图片 / GIF / 动态 PNG / 视频）</p>
+        <h1>Cyberpet <span>·</span> 头身分离工坊</h1>
+        <p>小黑猫 / 蓝白猫 / 橘猫 / 奶黄猫 / 卫衣人偶下半身 + 真人抠头（支持图片 / GIF / 动态 PNG / 视频）</p>
       </div>
       <div class="chips">
         <span id="hookChip" class="chip" hidden></span>
@@ -39,7 +39,7 @@
         <button class="pill" id="btnHeadMode" title="开：真人抠出来的头悬浮在身子上；关：换成 Q 版猫头">👶️ 真人抠头拼接（头身分离）</button>
         <button class="pill" id="btnPickHead" title="选一张图片当脑袋，选中即生效；PNG / JPG / GIF / 动态 PNG 都行；也可以在本面板按 ⌘V / Ctrl+V 直接粘贴剪贴板里的图片">🖼️ 选图片头像</button>
         <button class="pill" id="btnPickHeadVideo" title="选一段视频当脑袋，选中即生效，循环播放">🎬️ 选视频头像</button>
-        <button class="pill" id="btnResetHead" title="换回内置的白小纯头">🖼️ 还原白小纯头</button>
+        <button class="pill" id="btnResetHead" title="换回内置的默认头像">🖼️ 还原默认头像</button>
         <span class="note" id="headName"></span>
       </section>
 
@@ -54,6 +54,8 @@
       <section class="row"><span class="lab">调节</span>
         <label class="slider">头大小<input type="range" id="headScale" min="0.6" max="1.4" step="0.01"><b id="headScaleVal"></b></label>
         <label class="slider" title="整个桌宠变大变小（窗口一起缩放）">大小<input type="range" id="petScale" min="0.6" max="1.5" step="0.05"><b id="petScaleVal"></b></label>
+        <label class="chk" title="锁定后不能拖动头像调整位置（此时拖头=摸头）；不勾选时按住头像拖动即可调整位置"><input type="checkbox" data-key="headLock">锁定头像位置</label>
+        <button class="pill ghost" id="btnResetHeadPos" title="头像回到默认位置">归位</button>
         <label class="chk"><input type="checkbox" data-key="sticker">贴纸白边</label>
         <label class="chk"><input type="checkbox" data-key="keyBubbles">按键气泡</label>
         <label class="chk"><input type="checkbox" data-key="keySfx">键盘音效</label>

@@ -6,3 +6,4 @@ dist/
 .smoke-win-profile/
 .selftest/
 .DS_Store
+.github/

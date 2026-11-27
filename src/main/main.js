@@ -307,10 +307,10 @@ function meta() {
     isMac: PLATFORM === 'darwin',
     author: AUTHOR.show ? { ...AUTHOR, show: undefined } : null,
     headType, // 头像是图片还是视频，渲染层据此互斥显示
-    headSrc: pathToFileURL(head || at(assetsDir, 'heads', 'bxc-default.png')).href,
+    headSrc: pathToFileURL(head || at(assetsDir, 'heads', 'default-head.png')).href,
     headIsCustom: !!head,
-    headName: head ? strip(head) : '白小纯（内置）',
-    defaultHeadSrc: pathToFileURL(at(assetsDir, 'heads', 'bxc-default.png')).href,
+    headName: head ? strip(head) : '默认头像',
+    defaultHeadSrc: pathToFileURL(at(assetsDir, 'heads', 'default-head.png')).href,
     voiceSrc: voice ? pathToFileURL(voice).href : null,
     voiceName: voice ? strip(voice) : '',
     version: app.getVersion(),
@@ -424,6 +424,15 @@ function startingDir(key, fallback) {
   return dir && fs.existsSync(dir) ? dir : fallback;
 }
 
+// 有些 Windows 系统没有「图片 / 视频」库，getPath 会抛异常：降级到用户目录
+function safeGetPath(name) {
+  try {
+    return app.getPath(name);
+  } catch {
+    return app.getPath('home');
+  }
+}
+
 function isFromPanel(e) {
   return !!panelWin && !panelWin.isDestroyed() && e.sender === panelWin.webContents;
 }
@@ -449,6 +458,10 @@ function registerIpc() {
   ipcMain.on('pet:dragEnd', (e) => {
     if (isFromPet(e)) store.set({ petPos: posOf(petWin) });
   });
+  ipcMain.on('pet:headOffset', (e, off) => {
+    if (!isFromPet(e)) return;
+    setSettings({ headOffset: off || null }); // 走 setSettings：更新内存 + 落盘 + 广播
+  });
   ipcMain.on('pet:headBroken', (e) => {
     if (isFromPet(e)) setSettings({ head: null, headMode: 'photo' });
   });
@@ -468,12 +481,27 @@ function registerIpc() {
   async function pickHead(e, kind) {
     if (!isFromPanel(e)) return null;
     const isVideo = kind === 'video';
-    const r = await dialog.showOpenDialog(panelWin, {
-      title: isVideo ? '选择视频头像（循环播放，声音静音）' : '选择图片头像（PNG / JPG / GIF 均可，GIF 和动态 PNG 会动）',
-      defaultPath: startingDir(isVideo ? 'lastVideoDir' : 'lastImageDir', app.getPath(isVideo ? 'videos' : 'pictures')),
-      properties: ['openFile'],
-      filters: [isVideo ? { name: '视频', extensions: VIDEO_PICK_EXTS } : { name: '图片', extensions: IMAGE_PICK_EXTS }],
-    });
+    let r;
+    try {
+      r = await dialog.showOpenDialog(panelWin, {
+        title: isVideo ? '选择视频头像（循环播放，声音静音）' : '选择图片头像（PNG / JPG / GIF 均可，GIF 和动态 PNG 会动）',
+        defaultPath: startingDir(isVideo ? 'lastVideoDir' : 'lastImageDir', safeGetPath(isVideo ? 'videos' : 'pictures')),
+        properties: ['openFile'],
+        filters: [isVideo ? { name: '视频', extensions: VIDEO_PICK_EXTS } : { name: '图片', extensions: IMAGE_PICK_EXTS }],
+      });
+    } catch (err) {
+      // 个别系统的默认目录打不开：退回用户目录再试一次
+      try {
+        r = await dialog.showOpenDialog(panelWin, {
+          title: isVideo ? '选择视频头像' : '选择图片头像',
+          defaultPath: safeGetPath('home'),
+          properties: ['openFile'],
+          filters: [isVideo ? { name: '视频', extensions: VIDEO_PICK_EXTS } : { name: '图片', extensions: IMAGE_PICK_EXTS }],
+        });
+      } catch (err2) {
+        return { error: `选择窗口打开失败：${err2.message}` };
+      }
+    }
     if (r.canceled || !r.filePaths[0]) return null;
     return importHead(e, r.filePaths[0], path.dirname(r.filePaths[0]));
   }
@@ -494,7 +522,7 @@ function registerIpc() {
     if (!isFromPanel(e)) return null;
     const r = await dialog.showOpenDialog(panelWin, {
       title: '导入配音（mp3 / m4a / wav）',
-      defaultPath: startingDir('lastAudioDir', app.getPath('music')),
+      defaultPath: startingDir('lastAudioDir', safeGetPath('music')),
       properties: ['openFile'],
       filters: [{ name: '音频', extensions: AUDIO_PICK_EXTS }],
     });
@@ -547,23 +575,6 @@ function boot() {
   userDataDir = app.getPath('userData');
   assetsDir = at(app.getAppPath(), 'assets');
   rendererDir = at(__dirname, '..', 'renderer');
-  // 从旧版目录（白小纯桌宠）迁移设置和已导入的头像 / 配音，改名不丢配置
-  const legacyDir = path.join(path.dirname(userDataDir), '白小纯桌宠');
-  if (!fs.existsSync(at(userDataDir, 'settings.json')) && fs.existsSync(at(legacyDir, 'settings.json'))) {
-    try {
-      fs.copyFileSync(at(legacyDir, 'settings.json'), at(userDataDir, 'settings.json'));
-      for (const sub of ['heads', 'voice']) {
-        const from = at(legacyDir, sub);
-        if (fs.existsSync(from)) {
-          fs.mkdirSync(at(userDataDir, sub), { recursive: true });
-          for (const f of fs.readdirSync(from)) fs.copyFileSync(path.join(from, f), at(userDataDir, sub, f));
-        }
-      }
-      console.log('[migrate] 已从旧版目录迁移设置和素材');
-    } catch (err) {
-      console.error('[migrate] 迁移失败（不影响使用）:', err.message);
-    }
-  }
   store = new SettingsStore(at(userDataDir, 'settings.json'));
   settings = store.get();
   // 上次用的头像 / 配音文件已经不在了（被删、换了电脑）：回到默认，别留一个加载不出来的路径

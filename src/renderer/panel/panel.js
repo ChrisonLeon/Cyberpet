@@ -140,7 +140,8 @@
   els.btnHeadMode.addEventListener('click', () => set({ headMode: state.data.settings.headMode === 'photo' ? 'cartoon' : 'photo' }));
   $('#btnPickHead').addEventListener('click', () => applyResult(() => api.pickHead(), (d) => `已换成图片头像：${d.meta.headName}`));
   $('#btnPickHeadVideo').addEventListener('click', () => applyResult(() => api.pickHeadVideo(), (d) => `已换成视频头像：${d.meta.headName}`));
-  $('#btnResetHead').addEventListener('click', () => applyResult(() => api.resetHead(), () => '已还原为内置的白小纯头'));
+  $('#btnResetHead').addEventListener('click', () => applyResult(() => api.resetHead(), () => '已还原为默认头像'));
+  $('#btnResetHeadPos').addEventListener('click', () => set({ headOffset: null }).then(() => toast('头像位置已归位')));
   for (const c of $$('[data-key]')) c.addEventListener('change', () => set({ [c.dataset.key]: c.checked }));
   els.switchSound.addEventListener('change', () => set({ switchSound: els.switchSound.value }));
   els.desk.addEventListener('change', () => set({ desk: els.desk.value }));

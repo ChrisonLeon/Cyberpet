@@ -13,4 +13,5 @@ contextBridge.exposeInMainWorld('pet', {
   dragEnd: () => ipcRenderer.send('pet:dragEnd'),
   status: (s) => ipcRenderer.send('pet:status', s),
   headBroken: () => ipcRenderer.send('pet:headBroken'),
+  saveHeadOffset: (off) => ipcRenderer.send('pet:headOffset', off),
 });

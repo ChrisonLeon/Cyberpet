@@ -4,9 +4,11 @@ const path = require('path');
 
 const DEFAULTS = {
   body: 'black',        // black 小黑猫身 | bluewhite 蓝白小猫身 | doll 卫衣人偶身
-  headMode: 'photo',    // photo 真人抠头（图片或视频）| cartoon Q版猫头
-  head: null,           // null = 内置白小纯头，否则是 userData/heads 下的绝对路径
+  headMode: 'cartoon',  // cartoon Q版猫头（默认）| photo 真人抠头（图片或视频）
+  head: null,           // null = 内置默认头像，否则是 userData/heads 下的绝对路径
   headScale: 1.1,
+  headOffset: null,     // 头像相对默认位置的偏移 {x, y}
+  headLock: false,      // 锁定头像位置：锁定后不能拖动头像
   petScale: 1.0,        // 整体大小（窗口 + 内容一起缩放）
   sticker: true,        // 贴纸白边
   keyBubbles: true,     // 按键气泡
@@ -33,7 +35,7 @@ const ENUMS = {
   switchSound: ['mahjong', 'blue', 'woodfish', 'kitten'],
   desk: ['transparent', 'bluewhite', 'dark', 'none'],
 };
-const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible'];
+const BOOLEANS = ['sticker', 'keyBubbles', 'keySfx', 'voiceEaster', 'privacy', 'alwaysOnTop', 'petVisible', 'panelVisible', 'headLock'];
 const PATHS = ['head', 'voice', 'lastImageDir', 'lastVideoDir', 'lastAudioDir'];
 
 function isPos(v) {
@@ -55,6 +57,12 @@ function sanitize(patch = {}) {
   }
   if (Number.isFinite(patch.petScale)) {
     out.petScale = Math.min(1.5, Math.max(0.6, Math.round(patch.petScale * 20) / 20));
+  }
+  if (patch.headOffset === null) out.headOffset = null;
+  else if (patch.headOffset && typeof patch.headOffset === 'object'
+    && Number.isFinite(patch.headOffset.x) && Number.isFinite(patch.headOffset.y)) {
+    const cl = (v) => Math.round(Math.min(120, Math.max(-120, v)));
+    out.headOffset = { x: cl(patch.headOffset.x), y: cl(patch.headOffset.y) };
   }
   for (const key of PATHS) {
     if (patch[key] === null) out[key] = null;

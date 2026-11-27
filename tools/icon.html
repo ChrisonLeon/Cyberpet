@@ -8,6 +8,7 @@
     body {
       --fur: #1b1a20; --fur-hi: #37363f; --fur-line: #4a4956; --patch: #8f9bb4; --arm: #1b1a20;
       --paw: #fff; --paw-line: #c5cfe2; --pad: #ffaec6; --collar: #3d7bf2; --collar-hi: #a6c3ff;
+      --tail: #1b1a20; --tail-tip: #1b1a20; --tail-hi: #4d4c59;
     }
     #app { position: absolute; left: 0; top: 0; width: 1024px; height: 1024px; }
     #app .bg {
@@ -30,7 +31,17 @@
     #app .bell-slit { fill: none; stroke: #b9800a; stroke-width: 1.6; stroke-linecap: round; }
     #app .paw-body { fill: var(--paw); stroke: var(--paw-line); stroke-width: 1.5; }
     #app .pad { fill: var(--pad); }
-    #app .head { position: absolute; left: 292px; top: 134px; width: 440px; height: 538px; }
+    #app .head { position: absolute; left: 262px; top: 128px; width: 500px; height: 494px; }
+    /* 黑猫配色（与桌宠 black 身子一致） */
+    #app .ear, #app .face { fill: #1b1a20; }
+    #app .ear-in { fill: #6b4a5c; }
+    #app .iris { fill: #e9f76a; }
+    #app .pupil { fill: #15151a; }
+    #app .glint { fill: #fff; }
+    #app .blush { fill: #ff9db5; opacity: .5; }
+    #app .nose { fill: #ff9db5; }
+    #app .mouth { fill: none; stroke: #f4f4f8; stroke-width: 1.8; stroke-linecap: round; }
+    #app .whisk { fill: none; stroke: #9a99a6; stroke-width: 1.5; stroke-linecap: round; }
     #app .ghost, #app .photo { position: absolute; inset: 0; width: 100%; height: 100%; }
     #app .ghost {
       filter: brightness(0) invert(1)
@@ -53,16 +64,18 @@
     const EYE = (cx) => `M${cx - 1.5} 13.4 a1.5 1.9 0 1 0 3 0 a1.5 1.9 0 1 0 -3 0 Z`;
 
     function appIcon() {
-      const torso = ART.torsoMarkup('black').replace('<g class="sil">', '<g style="display:none">');
+      // 纯黑猫：卡通头 + 带尾巴的身子 + 两只爪子（贴纸白边保留），不用真人头像
+      const torso = ART.torsoMarkup('black');
       const paw = ART.pawMarkup('black');
+      const head = ART.cartoonHeadMarkup();
       return `<div id="app">
         <div class="bg"></div><div class="glow"></div><div class="floor"></div>
         <svg class="torso" viewBox="0 0 240 132">
           ${torso}
-          <g transform="translate(60 112)">${paw}</g>
-          <g transform="translate(104 112)">${paw}</g>
+          <g transform="translate(52 104)">${paw}</g>
+          <g transform="translate(96 104)">${paw}</g>
         </svg>
-        <div class="head"><img class="ghost" src="${HEAD}"><img class="photo" src="${HEAD}"></div>
+        <div class="head"><svg viewBox="0 0 160 158" style="width:100%;height:100%">${head}</svg></div>
       </div>`;
     }
 

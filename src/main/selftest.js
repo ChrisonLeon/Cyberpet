@@ -144,7 +144,9 @@ async function runSelfTest(ctx) {
     await sleep(3000);
   });
 
-  await step('petting', async () => { // 按住脑袋滑动 → 冒爱心
+  await step('petting', async () => { // 按住脑袋滑动 → 冒爱心（锁定状态下拖头=摸头）
+    await setSettings({ headLock: true });
+    await sleep(200);
     mouse('mouseDown', 214, 150);
     await sleep(520);
     for (let i = 1; i <= 4; i++) { mouse('mouseMove', 214 + i * 4, 150); await sleep(70); }
@@ -152,6 +154,8 @@ async function runSelfTest(ctx) {
     mouse('mouseUp', 230, 150);
     await sleep(150);
     check(summary.hearts > 0, `摸头没有冒爱心（${summary.hearts}）`);
+    await setSettings({ headLock: false });
+    await sleep(200);
   });
 
   await step('drag', async () => { // 拖动身子 → 窗口跟着走
@@ -238,6 +242,45 @@ async function runSelfTest(ctx) {
     await setSettings({ petScale: 1 });
     await sleep(400);
     check(Math.abs(pet.getBounds().width - 394) <= 3, '没有恢复默认大小');
+  });
+  await step('head-offset', async () => { // 未锁定时拖头像=调位置，锁定后不可拖
+    await setSettings({ headMode: 'photo', head: null, headLock: false, headOffset: null });
+    await sleep(400);
+    const pos0 = await js(pet, "(() => { const r = document.getElementById('headAnim').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })()");
+    await js(pet, `(() => {
+      const head = document.getElementById('headAnim');
+      const fire = (type, x, y, mx, my) => head.dispatchEvent(new PointerEvent(type, {
+        bubbles: true, cancelable: true, pointerId: 7, button: 0, buttons: type === 'pointerup' ? 0 : 1, clientX: x, clientY: y, movementX: mx, movementY: my }));
+      fire('pointerdown', 214, 150, 0, 0);
+      for (let i = 1; i <= 5; i++) fire('pointermove', 214 + i * 8, 150 - i * 3, 8, -3);
+      fire('pointerup', 254, 135, 0, 0);
+      return 1;
+    })()`);
+    await sleep(600);
+    const pos1 = await js(pet, "(() => { const r = document.getElementById('headAnim').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })()");
+    const saved = getSettings().headOffset;
+    check(pos1[0] > pos0[0] && pos1[1] < pos0[1], `拖动后头像没有移动（${JSON.stringify(pos0)}→${JSON.stringify(pos1)}）`);
+    check(saved && saved.x > 0 && saved.y < 0, `偏移没有落盘（${JSON.stringify(saved)}）`);
+    await shot(`${String(n++).padStart(2, '0')}-head-offset`);
+    await setSettings({ headLock: true });
+    await sleep(250);
+    await js(pet, `(() => {
+      const head = document.getElementById('headAnim');
+      const fire = (type, x, y, mx, my) => head.dispatchEvent(new PointerEvent(type, {
+        bubbles: true, cancelable: true, pointerId: 8, button: 0, buttons: type === 'pointerup' ? 0 : 1, clientX: x, clientY: y, movementX: mx, movementY: my }));
+      fire('pointerdown', 214, 150, 0, 0);
+      fire('pointermove', 240, 130, 26, -20);
+      fire('pointerup', 240, 130, 0, 0);
+      return 1;
+    })()`);
+    await sleep(400);
+    const saved2 = getSettings().headOffset;
+    check(saved2.x === saved.x && saved2.y === saved.y, `锁定后还能拖动（${JSON.stringify(saved)}→${JSON.stringify(saved2)}）`);
+    await shot(`${String(n++).padStart(2, '0')}-head-locked`);
+    await setSettings({ headLock: false, headOffset: null });
+    await sleep(400); // 等动画帧：脑袋有呼吸浮动，比较留容差
+    const pos2 = await js(pet, "(() => { const r = document.getElementById('headAnim').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })()");
+    check(Math.abs(pos2[0] - pos0[0]) <= 4 && Math.abs(pos2[1] - pos0[1]) <= 4, `归位后没有回到默认位置（${JSON.stringify(pos0)}→${JSON.stringify(pos2)}）`);
   });
   await step('head-sizes', async () => {
     await setSettings({ headScale: 1.4 });
@@ -392,6 +435,7 @@ async function runSelfTest(ctx) {
     check(a.dirs === 0, '素材目录配置应当已经去掉');
     check((await js(panel, "document.querySelectorAll('[data-body]').length")) === 5, '应当有 5 种身子');
     check((await js(panel, "!!document.getElementById('petScale')")) === true, '应当有整体大小滑块');
+    check((await js(panel, "!!document.querySelector('[data-key=\"headLock\"]')")) === true, '应当有锁定头像位置复选框');
     check(a.easterDisabled === true && a.off === true, '图片头像时「原声彩蛋」应当置灰不可点');
     check(a.soundDisabled === false, '键盘音效开着时轴体应当可选');
     check(a.head.includes('当前：'), '没有显示当前头像');

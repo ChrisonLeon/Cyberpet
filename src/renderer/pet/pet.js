@@ -40,7 +40,7 @@
     R: { shoulder: [268, 288], homeKeys: ['h', 'j'], rest: [254, 344] },
   };
   const DEMO_KEYS = 'baixiaochun'.split('');
-  const ANGRY_LINE = '白小纯：「能别放屁吗!」';
+  const ANGRY_LINE = '「能别放屁吗!」';
   const PAT_LINES = ['喵~', '呼噜呼噜…', '舒服~', '再摸要掉毛啦'];
   const HEART = '<svg class="heart" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 2.7 4.5 6.3 4.5c2 0 3.6 1.1 4.4 2.7.8-1.6 2.4-2.7 4.4-2.7 3.6 0 5.4 3.7 3.9 7.2C19.5 16.4 12 21 12 21z"/></svg>';
 
@@ -55,7 +55,7 @@
   };
 
   const sfx = new Sfx();
-  const cfg = { settings: null, meta: null, headSrc: '' };
+  const cfg = { settings: null, meta: null, headSrc: '', offset: { x: 0, y: 0 } };
   const paw = {
     L: { x: PAW.L.rest[0], y: PAW.L.rest[1], tx: PAW.L.rest[0], ty: PAW.L.rest[1], press: 0, lastKey: -9, reach: 0 },
     R: { x: PAW.R.rest[0], y: PAW.R.rest[1], tx: PAW.R.rest[0], ty: PAW.R.rest[1], press: 0, lastKey: -9, reach: 0 },
@@ -121,9 +121,11 @@
     const prevMeta = cfg.meta;
     cfg.settings = s;
     cfg.meta = payload.meta;
+    cfg.offset = (s.headOffset && Number.isFinite(s.headOffset.x)) ? { ...s.headOffset } : { x: 0, y: 0 };
     el.body.dataset.body = s.body;
     el.body.dataset.desk = s.desk;
     el.body.dataset.head = s.headMode;
+    el.headAnim.style.cursor = s.headLock ? 'pointer' : 'move';
     el.body.classList.toggle('sticker', s.sticker);
     document.documentElement.style.setProperty('--hs', s.headScale);
     if (!el.kbdBuilt) {
@@ -453,9 +455,16 @@
     window.pet.dragEnd();
   }
 
+  // 头像拖动：未锁定时按住头像 = 调整头像位置；锁定后 = 摸头
+  let headMove = null;
   el.headAnim.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
-    press = { t: performance.now(), moved: 0, petting: false, sawHeld: false };
+    if (cfg.settings && !cfg.settings.headLock) {
+      headMove = { ox: cfg.offset.x, oy: cfg.offset.y, moved: 0 };
+      try { el.headAnim.setPointerCapture(e.pointerId); } catch { /* 不影响 */ }
+    } else {
+      press = { t: performance.now(), moved: 0, petting: false, sawHeld: false };
+    }
     e.preventDefault();
   });
 
@@ -484,6 +493,15 @@
   }
 
   window.addEventListener('pointermove', (e) => {
+    if (headMove) { // 拖动头像位置
+      const nx = clamp(headMove.ox + (e.movementX || 0), -110, 110);
+      const ny = clamp(headMove.oy + (e.movementY || 0), -80, 60);
+      if (nx !== cfg.offset.x || ny !== cfg.offset.y) {
+        cfg.offset = { x: nx, y: ny };
+        headMove.moved += Math.abs(e.movementX || 0) + Math.abs(e.movementY || 0);
+      }
+      return;
+    }
     // 没有系统钩子时的兜底：见过「按住」状态后一旦变成没按，就在窗口外松过手
     const holder = drag || press;
     if (holder) {
@@ -513,6 +531,15 @@
   });
 
   window.addEventListener('pointerup', () => {
+    if (headMove) {
+      if (headMove.moved > 2) {
+        window.pet.saveHeadOffset({ ...cfg.offset }); // 拖完落盘
+      } else {
+        angry(); // 轻点头像：照常触发台词
+      }
+      headMove = null;
+      return;
+    }
     if (drag) { endDrag(); return; }
     release();
   });
@@ -635,6 +662,8 @@
     // 脑袋：悬浮呼吸 + 打字点头 + 生气抖动 + 闲时小动作，角度全部走弹簧
     const hx = anger * 5 * Math.sin(t * 46) + fx.lookX;
     const hy = 2.6 * Math.sin(t * 2.1) + typing * 2.2 * Math.sin(t * 23) + happy * 3 * Math.sin(t * 9) + fx.stretchY;
+    el.headAnim.style.left = `${(214 + cfg.offset.x).toFixed(1)}px`;
+    el.headAnim.style.top = `${(252 + cfg.offset.y).toFixed(1)}px`;
     el.headAnim.style.transform = `translate(-50%, -100%) translate(${hx.toFixed(2)}px, ${hy.toFixed(2)}px)`
       + ` rotate(${springHead.x.toFixed(2)}deg) scale(${(1 + anger * 0.06).toFixed(3)})`;
 
