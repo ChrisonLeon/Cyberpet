@@ -98,12 +98,17 @@
       } else if (trusted === null) messages.push('辅助功能授权状态 unknown，当前无法确认是否已授权。');
       messages.push('当前为 ad-hoc 签名，换版后可能需要你在「辅助功能」中重新勾选当前应用，再点「重新检测」。更新不保证免授权，程序不会自动重置系统授权。');
     }
-    els.permText.textContent = messages.join(' ');
-    els.perm.hidden = !messages.length;
-    els.btnPermOpen.hidden = !mac;
-    els.btnPermFix.hidden = !(mac && trusted === false);
-    // 权限条位于可滚动 main 中，不调用 banner 扩高窗口。
-    $('#diagExecPath').textContent = meta.execPath || 'unknown（主进程未提供运行路径）';
+  let permShown = null;
+  els.permText.textContent = messages.join(' ');
+  els.perm.hidden = !messages.length;
+  els.btnPermOpen.hidden = !mac;
+  els.btnPermFix.hidden = !(mac && trusted === false);
+  // 横幅出现/消失时让主进程扩高/收起窗口，默认视图始终不滚条
+  if (els.perm.hidden !== permShown) {
+    permShown = els.perm.hidden;
+    if (typeof api.banner === 'function') api.banner(!permShown);
+  }
+  $('#diagExecPath').textContent = meta.execPath || 'unknown（主进程未提供运行路径）';
     $('#diagInstalled').textContent = boolText(meta.isInstalled);
     $('#diagHookState').textContent = hook.state || 'unknown';
     $('#diagTrusted').textContent = boolText(trusted);

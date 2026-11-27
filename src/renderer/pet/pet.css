@@ -100,8 +100,8 @@ body.reach #mouseWheel { animation: wheelSpin .32s linear infinite; }
 @keyframes wheelSpin { from { transform: scaleY(1); } 50% { transform: scaleY(.2); } to { transform: scaleY(1); } }
 
 #fore { left: 0; top: 0; pointer-events: none; }
-#fore .arm { fill: none; stroke: var(--arm); stroke-width: 15; stroke-linecap: round; pointer-events: none; }
-#fore .arm.edge { stroke: var(--arm-edge); stroke-width: 19; opacity: .6; }
+#fore .arm { fill: none; stroke: var(--arm); stroke-width: 17; stroke-linecap: round; pointer-events: none; }
+#fore .arm.edge { stroke: var(--arm-edge); stroke-width: 21; opacity: .6; }
 #fore .paw-body { fill: var(--paw); stroke: var(--paw-line); stroke-width: 1.4; }
 #fore .bean { fill: var(--pad); }
 
@@ -118,15 +118,15 @@ body[data-head="photo"][data-media="image"] #headImg { display: block; }
 body[data-head="photo"].sticker[data-media="image"] #headGhost { display: block; }
 /* 视频头像：与图片头像严格互斥，永远只有一个在显示 */
 body[data-head="photo"][data-media="video"] #headVideo { display: block; object-fit: cover; }
-body.sticker[data-head="photo"][data-media="video"] #headVideo { border: 5px solid #fff; border-radius: 16px; box-shadow: 0 4px 10px rgba(0, 0, 0, .18); }
+body.sticker[data-head="photo"][data-media="video"] #headVideo { border: 2.5px solid #fff; border-radius: 16px; box-shadow: 0 4px 10px rgba(0, 0, 0, .18); }
 body[data-head="cartoon"] #headCartoon { display: block; }
 #headCartoon { position: absolute; left: 0; bottom: 0; width: 100%; display: none; }
 body:not(.sticker) #headImg, body:not(.sticker) #headCartoon, body:not(.sticker) #headVideo { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .32)); }
 /* 贴纸白边：把图片压成纯白剪影，再用一串 drop-shadow 向外撑出描边 */
 #headGhost {
   filter: brightness(0) invert(1)
-    drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
-    drop-shadow(1.6px 1.6px 0 #fff) drop-shadow(-1.6px 1.6px 0 #fff) drop-shadow(1.6px -1.6px 0 #fff) drop-shadow(-1.6px -1.6px 0 #fff)
+    drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
+    drop-shadow(.8px .8px 0 #fff) drop-shadow(-.8px .8px 0 #fff) drop-shadow(.8px -.8px 0 #fff) drop-shadow(-.8px -.8px 0 #fff)
     drop-shadow(0 5px 6px rgba(0, 0, 0, .28));
 }
 #headAnim.squish { animation: squish .42s cubic-bezier(.3, .7, .3, 1); }

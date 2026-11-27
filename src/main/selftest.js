@@ -99,6 +99,21 @@ async function runSelfTest(ctx) {
       + " dFresh: window.BXC_ART.tailPathD(0, 0).d.slice(0, 120),"
       + " rest: JSON.stringify(window.BXC_ART.TAIL_REST || 'none') }); })()");
     check(l.desk === 'transparent' && l.pad === 'none' && l.kb === 'block', '默认应当是透明桌面（只有键盘和鼠标）');
+    // 面板默认视图应当一屏放下，不出滚动条（授权横幅出现时内容变多，允许滚动）
+    summary.panelLayout = await js(panel, "(() => { const footers = document.querySelectorAll('footer');"
+      + " const footer = footers[footers.length - 1]; const perm = document.getElementById('perm');"
+      + " return JSON.stringify({ header: document.querySelector('header').offsetHeight,"
+      + " content: document.querySelector('main').scrollHeight,"
+      + " permH: perm.hidden ? 0 : perm.offsetHeight + 10, footer: footer.offsetHeight,"
+      + " bannerHidden: perm.hidden, win: innerHeight,"
+      + " titlebarDrag: getComputedStyle(document.querySelector('header')).webkitAppRegion,"
+      + " collapseNoDrag: getComputedStyle(document.getElementById('btnCollapse')).webkitAppRegion }); })()");
+    log('面板布局 ' + summary.panelLayout);
+    const pl = JSON.parse(summary.panelLayout);
+    check(pl.titlebarDrag === 'drag' && pl.collapseNoDrag === 'no-drag', `标题栏拖拽区域不对（${pl.titlebarDrag}/${pl.collapseNoDrag}）`);
+    // 无论有没有授权横幅（横幅出现时窗口会自动扩高），内容都必须一屏放下
+    check(pl.header + pl.content + pl.footer <= pl.win + 2, `面板视图超出一屏（需要 ${pl.header + pl.content + pl.footer}px，窗口 ${pl.win}px）`);
+    log(`面板自然高度（无授权横幅）${pl.header + pl.content - pl.permH + pl.footer}px`);
     await shot('01-panel', panel);
     await js(pet, "document.documentElement.style.background = 'linear-gradient(135deg, #d5e0f2, #8ea3c6)'; 1"); // 后续截图垫一层底色
   });
