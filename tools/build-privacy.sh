@@ -16,5 +16,7 @@ echo "• arm64"
 swiftc -O -sdk "$SDK" -target arm64-apple-macos13 \
   -o native/bin/darwin-arm64/privacy-probe native/macos/privacy-probe.swift
 
-file native/bin/darwin-arm64/privacy-probe
+swiftc -O -sdk "$SDK" -target arm64-apple-macos13 \
+  -o native/bin/darwin-arm64/input-hook native/macos/input-hook.swift
+file native/bin/darwin-arm64/privacy-probe native/bin/darwin-arm64/input-hook
 echo "完成。冒烟验证：echo '{}' | native/bin/darwin-arm64/privacy-probe --once"

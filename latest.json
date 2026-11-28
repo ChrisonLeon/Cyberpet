@@ -1,15 +1,15 @@
 {
-  "version": "2.6.4",
-  "notes": "导入图片不再拉伸变形：只锁高度，宽度按原图比例自适应",
+  "version": "2.7.0",
+  "notes": "键鼠监听换成被动监听助手（listen-only），从机制上杜绝钩子堵死系统输入；托盘应急开关保留",
   "urls": {
     "darwin-arm64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.4/BaiXiaoChunPet-2.6.4-mac-arm64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.0/BaiXiaoChunPet-2.7.0-mac-arm64.zip"
     ],
     "darwin-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.4/BaiXiaoChunPet-2.6.4-mac-x64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.0/BaiXiaoChunPet-2.7.0-mac-x64.zip"
     ],
     "win32-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.4/Cyberpet-2.6.4-setup.exe"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.0/Cyberpet-2.7.0-setup.exe"
     ]
   }
 }

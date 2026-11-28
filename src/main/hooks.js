@@ -2,6 +2,7 @@
 const { EventEmitter } = require('events');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const { labelFor } = require('../shared/keys');
 
 // libuiohook 扫描码，与 uiohook-napi 的 UiohookKey 一致（不是 USB HID 键码）。
@@ -33,6 +34,99 @@ KEY_CODES.F12 = 88;
 const MODIFIERS = new Set(['shift', 'ctrl', 'alt', 'meta']);
 const EVENTS = { 4: 'keydown', 5: 'keyup', 7: 'mousedown', 8: 'mouseup', 9: 'mousemove', 10: 'mousemove', 11: 'wheel' };
 
+// macOS 被动监听助手：独立进程用 listen-only 事件钩子只观察不拦截，
+// 从机制上杜绝主动式钩子停摆导致的「全系统鼠标键盘堵死」。
+function resolveHelperPath({ resourcesPath = process.resourcesPath,
+  isPackaged = !!(process.versions.electron && !process.defaultApp),
+  platform = process.platform, arch = process.arch } = {}) {
+  if (platform !== 'darwin' || !['arm64', 'x64'].includes(arch)) return null;
+  if (isPackaged) return resourcesPath ? path.join(resourcesPath, 'helpers', `${platform}-${arch}`, 'input-hook') : null;
+  return path.join(__dirname, '..', '..', 'native', 'bin', `${platform}-${arch}`, 'input-hook');
+}
+
+function wrapHelper(helperPath, spawnFn = spawn) {
+  const em = new EventEmitter();
+  let wanted = false;
+  let running = false;
+  let child = null;
+  let lastLine = 0;
+  let watchdog = null;
+  let restartTimer = null;
+  let lastStart = 0;
+
+  const clearTimers = () => {
+    if (watchdog) clearInterval(watchdog);
+    if (restartTimer) clearTimeout(restartTimer);
+    watchdog = restartTimer = null;
+  };
+
+  const launch = () => {
+    let c;
+    try {
+      c = spawnFn(helperPath, [], { stdio: ['pipe', 'pipe', 'ignore'] });
+    } catch {
+      return false;
+    }
+    child = c;
+    running = true;
+    lastStart = Date.now();
+    lastLine = Date.now();
+    watchdog = setInterval(() => { if (Date.now() - lastLine > 6000) { try { c.kill(); } catch { /* 已退出 */ } } }, 2000);
+    watchdog.unref?.();
+    let buf = '';
+    c.stdout.on('data', (chunk) => {
+      lastLine = Date.now();
+      buf += chunk.toString('utf8');
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        if (!line) continue;
+        let e;
+        try { e = JSON.parse(line); } catch { continue; }
+        if (e.t === 'hb' || e.t === 'ready') continue;
+        if (e.t === 'key') em.emit('keydown', { name: String(e.n || ''), shift: !!e.s, ctrl: !!e.c, alt: !!e.a, meta: !!e.m, repeat: !!e.r });
+        else if (e.t === 'keyup') em.emit('keyup', { name: String(e.n || '') });
+        else if (e.t === 'md' || e.t === 'mu') em.emit(e.t === 'md' ? 'mousedown' : 'mouseup', { button: e.b });
+        else if (e.t === 'mm') em.emit('mousemove', { x: e.x, y: e.y });
+        else if (e.t === 'wheel') em.emit('wheel', { direction: e.d > 0 ? 1 : -1, amount: Math.abs(e.d) || 1 });
+      }
+    });
+    c.once('exit', () => {
+      if (!wanted) return; // 用户主动 stop：不重启
+      running = false;
+      clearTimers();
+      // 被动钩子断了不影响系统输入，静默拉起新实例（快速失败退避到 30s 上限）
+      const stable = Date.now() - lastStart > 30000;
+      const delay = stable ? 1000 : Math.min(30000, 2000 * Math.max(1, fastFails()));
+      restartTimer = setTimeout(() => { if (wanted) launch(); }, delay);
+      restartTimer.unref?.();
+    });
+    return true;
+  };
+  const fastFails = () => (Date.now() - lastStart > 30000 ? 0 : Math.ceil((30000 - (Date.now() - lastStart)) / 5000) + 1);
+
+  em.start = () => {
+    if (running) return true;
+    wanted = true;
+    return launch();
+  };
+  em.stop = () => {
+    wanted = false;
+    running = false;
+    clearTimers();
+    if (child) {
+      try { child.stdin.end('stop\n'); } catch { /* 管道已关 */ }
+      setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* 已退出 */ } }, 300).unref?.();
+      child = null;
+    }
+    return true;
+  };
+  em.keyTap = () => false; // 被动监听不能注入按键（自测用 hook.inject 代替）
+  // 与 wrapRaw 相同的包装结构：uIOhook 挂事件，UiohookKey 供键码翻译兜底
+  return { uIOhook: em, UiohookKey: KEY_CODES, isHelper: true };
+}
+
 // 只包装接口，不在 require 阶段启动全局监听。授权后 start/stop 都可重复调用。
 function wrapRaw(raw) {
   const em = new EventEmitter();
@@ -47,7 +141,16 @@ function wrapRaw(raw) {
   return { uIOhook: em, UiohookKey: KEY_CODES };
 }
 
-function loadBackend({ requireModule = require, exists = fs.existsSync, resourcesPath = process.resourcesPath, platform = process.platform, arch = process.arch } = {}) {
+function loadBackend({ requireModule = require, exists = fs.existsSync, resourcesPath = process.resourcesPath, platform = process.platform, arch = process.arch, isPackaged = !!(process.versions.electron && !process.defaultApp) } = {}) {
+  // macOS：优先用被动监听助手（不会阻塞系统输入）；助手缺失再退回 uiohook-napi
+  const helperPath = resolveHelperPath({ resourcesPath, isPackaged, platform, arch });
+  if (helperPath && exists(helperPath)) {
+    try {
+      return { backend: wrapHelper(helperPath), via: 'input-hook helper', error: null };
+    } catch (first) {
+      // 助手启动失败退回 uiohook-napi
+    }
+  }
   try {
     return { backend: requireModule('uiohook-napi'), via: 'uiohook-napi', error: null };
   } catch (first) {
@@ -122,7 +225,7 @@ class InputHook extends EventEmitter {
   onKey(e) {
     this.markLive();
     if (this.blocked) return; // 先判断保护状态，再读取按键身份，不缓存隐私期的键
-    const name = this.names.get(e.keycode) || '';
+    const name = typeof e.name === 'string' ? e.name : this.names.get(e.keycode) || '';
     const repeat = this.held.has(name);
     if (name) this.held.add(name);
     this.emitEvent({ kind: 'key', name, repeat, mod: MODIFIERS.has(name), shift: !!e.shiftKey, ctrl: !!e.ctrlKey, alt: !!e.altKey, meta: !!e.metaKey });
@@ -130,7 +233,7 @@ class InputHook extends EventEmitter {
   onKeyUp(e) {
     this.markLive();
     if (this.blocked) return;
-    const name = this.names.get(e.keycode) || '';
+    const name = typeof e.name === 'string' ? e.name : this.names.get(e.keycode) || '';
     this.held.delete(name);
     this.emitEvent({ kind: 'keyup', name });
   }
@@ -185,10 +288,10 @@ class InputHook extends EventEmitter {
     if (this.backend) for (const [event, fn] of Object.entries(this.listeners)) this.backend.uIOhook.removeListener(event, fn);
   }
   postTestKey() {
-    if (!this.running || !this.backend) return false;
+    if (!this.running || !this.backend || this.backend.isHelper) return false;
     try { this.backend.uIOhook.keyTap((this.backend.UiohookKey || KEY_CODES).Shift); return true; } catch { return false; }
   }
   inject(ev) { if (!this.blocked) this.emit('event', { ...ev, __test: true }); }
 }
 
-module.exports = { InputHook, labelFor, hookAvailable: !!loaded.backend, wrapRaw, loadBackend, KEY_CODES };
+module.exports = { InputHook, labelFor, hookAvailable: !!loaded.backend, wrapRaw, wrapHelper, loadBackend, resolveHelperPath, KEY_CODES };
