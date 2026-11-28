@@ -127,15 +127,26 @@ body[data-head="photo"][data-media="image"][data-anim="static"] #headImg,
 body[data-head="photo"][data-media="image"][data-anim="static"] #headGhost { display: none; }
 /* 视频头像：与图片头像严格互斥，永远只有一个在显示 */
 body[data-head="photo"][data-media="video"] #headVideo { display: block; object-fit: cover; }
-body.sticker[data-head="photo"][data-media="video"] #headVideo { border: 1px solid #fff; border-radius: 16px; box-shadow: 0 4px 10px rgba(0, 0, 0, .18); }
+body.sticker[data-head="photo"][data-media="video"] #headVideo { border: var(--sticker-w, 1px) solid #fff; border-radius: 16px; box-shadow: 0 4px 10px rgba(0, 0, 0, .18); }
 body[data-head="cartoon"] #headCartoon { display: block; }
+/* 贴纸白边粗细：--sticker-w 由面板「白边」滑块控制（0–4px，默认 1） */
+body.sticker #torso .sil path,
+body.sticker #headCartoon .sil *,
+body.sticker #deskmouse .sil,
+body.sticker #kb .sil,
+body.sticker #pad .sil { stroke-width: var(--sticker-w, 1px); }
+body.sticker #torso #tailSil { stroke-width: calc(15.5px + var(--sticker-w, 1px)); }
 #headCartoon { position: absolute; left: 0; bottom: 0; width: 100%; display: none; }
 body:not(.sticker) #headImg, body:not(.sticker) #headCartoon, body:not(.sticker) #headVideo { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .32)); }
 /* 贴纸白边：把图片压成纯白剪影，再用一串 drop-shadow 向外撑出描边 */
 #headGhost, #headStaticGhost {
   filter: brightness(0) invert(1)
-    drop-shadow(.3px 0 0 #fff) drop-shadow(-.3px 0 0 #fff) drop-shadow(0 .3px 0 #fff) drop-shadow(0 -.3px 0 #fff)
-    drop-shadow(.25px .25px 0 #fff) drop-shadow(-.25px .25px 0 #fff) drop-shadow(.25px -.25px 0 #fff) drop-shadow(-.25px -.25px 0 #fff)
+    drop-shadow(calc(var(--sticker-w, 1px) * .3) 0 0 #fff) drop-shadow(calc(var(--sticker-w, 1px) * -.3) 0 0 #fff)
+    drop-shadow(0 calc(var(--sticker-w, 1px) * .3) 0 #fff) drop-shadow(0 calc(var(--sticker-w, 1px) * -.3) 0 #fff)
+    drop-shadow(calc(var(--sticker-w, 1px) * .25) calc(var(--sticker-w, 1px) * .25) 0 #fff)
+    drop-shadow(calc(var(--sticker-w, 1px) * -.25) calc(var(--sticker-w, 1px) * .25) 0 #fff)
+    drop-shadow(calc(var(--sticker-w, 1px) * .25) calc(var(--sticker-w, 1px) * -.25) 0 #fff)
+    drop-shadow(calc(var(--sticker-w, 1px) * -.25) calc(var(--sticker-w, 1px) * -.25) 0 #fff)
     drop-shadow(0 5px 6px rgba(0, 0, 0, .28));
 }
 #headAnim.squish { animation: squish .42s cubic-bezier(.3, .7, .3, 1); }

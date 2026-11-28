@@ -13,6 +13,7 @@ const DEFAULTS = {
   angryLine: false,     // 「能别放屁吗」台词开关：选中后触发时在头上显示台词；未选中只暴躁敲键盘
   kbDir: 'reverse',     // 键鼠方向：reverse 反向（默认，鼠标在右）| forward 正向（键盘朝向宠物自己，鼠标在左）
   sticker: true,        // 贴纸白边
+  stickerWidth: 1,      // 贴纸白边粗细 0–4px（0 = 无白边纯剪影）
   keyBubbles: true,     // 按键气泡
   keySfx: true,         // 键盘音效
   sfxOn: true,          // 合成音效总开关（键盘音 / 生气 / 喵 / 呼噜）
@@ -60,6 +61,9 @@ function sanitize(patch = {}) {
   }
   if (Number.isFinite(patch.headScale)) {
     out.headScale = Math.min(1.4, Math.max(0.6, Math.round(patch.headScale * 100) / 100));
+  }
+  if (Number.isFinite(patch.stickerWidth)) {
+    out.stickerWidth = Math.min(4, Math.max(0, Math.round(patch.stickerWidth * 100) / 100));
   }
   if (Number.isFinite(patch.sfxVolume)) {
     out.sfxVolume = Math.min(1, Math.max(0, Math.round(patch.sfxVolume * 100) / 100));

@@ -6,7 +6,7 @@
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const TORSO_PATH = 'M34 114 C 28 76, 46 22, 80 16 C 114 22, 132 76, 126 114 C 104 120, 56 120, 34 114 Z';
+  const TORSO_PATH = 'M30 114 C 22 74, 42 20, 80 16 C 118 20, 138 74, 130 114 C 108 120, 52 120, 30 114 Z';
   // 尾巴和身子共用 SVG / 贴纸底。两段设计贝塞尔在接点共用竖直切线，始终向上呈 S 形。
   // 所有控制点都在 [16.5,223.5] × [16.5,115.5] 内：凸包性质保证最宽 18 的圆头描边不出界。
   const TAIL_ROOT = [118, 88];
@@ -67,8 +67,8 @@
 <g class="sil"><path d="${TORSO_PATH}" fill="#fff" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></g>
 <path d="${TORSO_PATH}" fill="url(#torsoShade)"/>
 ${['bluewhite', 'orange', 'cream'].includes(variant) ? `<g clip-path="url(#torsoClip)" fill="var(--patch)">
-  <path d="M32 114 C 26 74, 42 20, 80 16 C 78 42, 73 70, 71 118 L 32 114 Z"/>
-  <path d="M92 17 C 112 22, 126 44, 132 74 C 118 62, 100 46, 92 17 Z"/>
+  <path d="M28 114 C 24 72, 40 20, 80 16 C 78 42, 74 70, 72 118 L 28 114 Z"/>
+  <path d="M94 17 C 116 22, 132 44, 140 74 C 126 62, 106 46, 94 17 Z"/>
 </g>` : ''}
 <path class="string" d="M62 36 q -3 8 -2 13"/><path class="string" d="M98 36 q 3 8 2 13"/>
 <circle class="aglet" cx="60" cy="50" r="1.8"/><circle class="aglet" cx="100" cy="50" r="1.8"/>

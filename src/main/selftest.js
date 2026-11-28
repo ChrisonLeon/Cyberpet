@@ -529,6 +529,12 @@ async function runSelfTest(ctx) {
     check((await js(panel, "!!document.querySelector('[data-key=\"headLock\"]')")) === true, '应当有锁定头像位置复选框');
     check(a.videoBtnGone === true && a.easterGone === true, '「选视频」和「原声彩蛋」应当已经移除');
     check(a.sfxOn === true, '应当有音效总开关');
+    check((await js(panel, "!!document.getElementById('stickerWidth')")) === true, '应当有白边粗细滑块');
+    await setSettings({ stickerWidth: 2 });
+    await sleep(200);
+    const sw = await js(pet, "getComputedStyle(document.querySelector('#torso .sil path')).strokeWidth");
+    check(sw === '2px', `白边粗细应当生效（${sw}）`);
+    await setSettings({ stickerWidth: 1 });
     check(a.headBtns === 2, '头像行应当只剩 选图片/还原默认头像 两个按钮');
     check(a.soundDisabled === false, '键盘音效开着时轴体应当可选');
     check(a.head.includes('当前：'), '没有显示当前头像');

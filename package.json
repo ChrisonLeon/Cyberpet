@@ -1,7 +1,7 @@
 {
   "name": "bxc-desktop-pet",
   "productName": "Cyberpet",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "Cyberpet · 头身分离桌宠（Windows / macOS）",
   "main": "src/main/main.js",
   "private": true,

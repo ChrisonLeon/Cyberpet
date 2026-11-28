@@ -211,6 +211,7 @@
     el.headAnim.style.cursor = s.headLock ? 'pointer' : 'move';
     el.body.classList.toggle('sticker', s.sticker);
     document.documentElement.style.setProperty('--hs', s.headScale);
+    document.documentElement.style.setProperty('--sticker-w', `${Number(s.stickerWidth ?? 1)}px`);
     if (!el.kbdBuilt) {
       el.kbd.innerHTML = ART.keyboardSvg(payload.meta.isMac);
       el.kbdBuilt = true;

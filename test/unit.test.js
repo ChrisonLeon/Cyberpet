@@ -118,6 +118,10 @@ test('头的大小限制在 0.6 – 1.4，路径必须是绝对路径', () => {
   else assert.equal(sanitize({ head: '/tmp/a.png' }).head, '/tmp/a.png');
   assert.deepEqual(sanitize({ petPos: { x: 10.4, y: 20.6 } }).petPos, { x: 10, y: 21 });
   assert.equal(sanitize({ petPos: { x: 'a' } }).petPos, undefined);
+  assert.equal(sanitize({ stickerWidth: 9 }).stickerWidth, 4);
+  assert.equal(sanitize({ stickerWidth: -1 }).stickerWidth, 0);
+  assert.equal(sanitize({ stickerWidth: 1.234 }).stickerWidth, 1.23);
+  assert.equal(sanitize({ stickerWidth: 'big' }).stickerWidth, undefined);
 });
 
 // ---------- 导入：选中即生效，只保留最近的几个，正在用的不删 ----------

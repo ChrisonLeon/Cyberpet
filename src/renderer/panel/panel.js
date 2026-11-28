@@ -10,7 +10,7 @@
     perm: $('#perm'), permText: $('#permText'), btnPermOpen: $('#btnPermOpen'), btnRetry: $('#btnRetry'), btnPermFix: $('#btnPermFix'),
     headName: $('#headName'), btnFrenzy: $('#btnFrenzy'), btnAngryLine: $('#btnAngryLine'),
     headScale: $('#headScale'), headScaleVal: $('#headScaleVal'), petScale: $('#petScale'), petScaleVal: $('#petScaleVal'),
-    sfxVolume: $('#sfxVolume'), sfxVolumeVal: $('#sfxVolumeVal'),
+    sfxVolume: $('#sfxVolume'), sfxVolumeVal: $('#sfxVolumeVal'), stickerWidth: $('#stickerWidth'), stickerWidthVal: $('#stickerWidthVal'),
     switchSound: $('#switchSound'), desk: $('#desk'), voiceName: $('#voiceName'), btnClearVoice: $('#btnClearVoice'),
     privacyStatus: $('#privacyStatus'), privacyReason: $('#privacyReason'), privacyCapabilities: $('#privacyCapabilities'),
     toast: $('#toast'),
@@ -194,6 +194,10 @@
     els.petScaleVal.textContent = `${Math.round(s.petScale * 100)}%`;
     els.sfxVolume.value = s.sfxVolume;
     els.sfxVolumeVal.textContent = `${Math.round(s.sfxVolume * 100)}%`;
+    els.stickerWidth.value = s.stickerWidth ?? 1;
+    els.stickerWidthVal.textContent = `${Number(s.stickerWidth ?? 1)}px`;
+    els.stickerWidth.disabled = !s.sticker;
+    els.stickerWidth.title = s.sticker ? '贴纸白边粗细 0–4px' : '先勾选「贴纸白边」才生效';
     for (const c of $$('[data-key]')) c.checked = !!s[c.dataset.key];
     els.switchSound.disabled = !s.keySfx || s.sfxOn === false;
     els.switchSound.title = s.keySfx && s.sfxOn !== false ? '' : s.sfxOn === false ? '「音效」开关已关闭' : '先勾选「键盘音效」才会出声';
@@ -299,6 +303,11 @@
   bind($('#btnResetHead'), 'click', () => applyResult(() => api.resetHead(), () => '已还原为默认头像（Q 版猫头）'));
   bind($('#btnResetHeadPos'), 'click', async () => { await set({ headOffset: null }); toast('头像位置已归位'); });
   for (const c of $$('[data-key]')) bind(c, 'change', () => set({ [c.dataset.key]: c.checked }));
+  bind(els.stickerWidth, 'input', async () => {
+    const v = Number(els.stickerWidth.value);
+    els.stickerWidthVal.textContent = `${v}px`;
+    await set({ stickerWidth: v });
+  });
   bind(els.switchSound, 'change', () => set({ switchSound: els.switchSound.value }));
   bind(els.desk, 'change', () => set({ desk: els.desk.value }));
   for (const [input, label, key] of [[els.headScale, els.headScaleVal, 'headScale'], [els.petScale, els.petScaleVal, 'petScale'], [els.sfxVolume, els.sfxVolumeVal, 'sfxVolume']]) {

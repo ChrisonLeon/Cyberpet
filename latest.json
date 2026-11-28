@@ -1,15 +1,15 @@
 {
-  "version": "2.7.0",
-  "notes": "键鼠监听换成被动监听助手（listen-only），从机制上杜绝钩子堵死系统输入；托盘应急开关保留",
+  "version": "2.7.1",
+  "notes": "贴纸白边粗细可自定义（0–4px 滑块）；猫身微调稍胖并修复胳膊悬空",
   "urls": {
     "darwin-arm64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.0/BaiXiaoChunPet-2.7.0-mac-arm64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.1/BaiXiaoChunPet-2.7.1-mac-arm64.zip"
     ],
     "darwin-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.0/BaiXiaoChunPet-2.7.0-mac-x64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.1/BaiXiaoChunPet-2.7.1-mac-x64.zip"
     ],
     "win32-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.0/Cyberpet-2.7.0-setup.exe"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.1/Cyberpet-2.7.1-setup.exe"
     ]
   }
 }
