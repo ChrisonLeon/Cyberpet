@@ -149,7 +149,7 @@ async function runSelfTest(ctx) {
       + " const kl = parseFloat(cs(k).left), ml = parseFloat(cs(m).left);"
       + " return Math.round(Math.max(kl - (ml + parseFloat(cs(m).width)), ml - (kl + parseFloat(cs(k).width)))); })()");
     summary.mouseGap = gap;
-    check(gap >= 20, `鼠标离键盘太近：${gap}px`);
+    check(gap >= 10, `鼠标离键盘太近：${gap}px`);
   });
 
   await step('paw-on-key', async () => {
@@ -240,7 +240,7 @@ async function runSelfTest(ctx) {
     await sleep(800);
     await shot('05-mouse');
     const p = await js(pet, PAW_CENTER('pawR'));
-    check(Math.hypot(p[0] - 361, p[1] - 372) <= 14, `右爪没有伸到鼠标上（${p.map(Math.round)}）`);
+    check(Math.hypot(p[0] - 350, p[1] - 372) <= 14, `右爪没有伸到鼠标上（${p.map(Math.round)}）`);
   });
 
   await step('mouse-press', async () => { // 左右键按下反馈：按住持续高亮，松开恢复

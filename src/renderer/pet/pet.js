@@ -41,7 +41,7 @@
   // 肩膀在身子两侧偏下；爪子平时停在基准键上，打字时移到对应的键
   const PAW = {
     L: { shoulder: [160, 288], mouse: [33, 372], homeKeys: ['f', 'g'], rest: [186, 344] },
-    R: { shoulder: [268, 288], homeKeys: ['h', 'j'], rest: [254, 344], mouse: [361, 372] },
+    R: { shoulder: [268, 288], homeKeys: ['h', 'j'], rest: [254, 344], mouse: [350, 372] },
   };
   const DEMO_KEYS = 'baixiaochun'.split('');
   const ANGRY_LINE = '「能别放屁吗!」';

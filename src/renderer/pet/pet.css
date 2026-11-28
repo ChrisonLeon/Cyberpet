@@ -58,10 +58,12 @@ body[data-desk="none"] #pad, body[data-desk="none"] #kb, body[data-desk="none"] 
 #bell { transform-origin: 80px 48px; }
 
 /* 反向（默认）：鼠标在右，键盘整体左移让位；正向：键盘回中并在左，两侧镜像 */
-#kb { left: 38px; top: 318px; width: 272px; height: 100px; transform-origin: 50% 50%;
+#kb { left: 38px; top: 314px; width: 272px; height: 108px; transform-origin: 50% 50%;
   transform: perspective(580px) rotateX(44deg) rotate(var(--kb-turn, 0deg)); }
 body[data-kb-dir="forward"] #kb { left: 84px; }
 #kbd { display: block; }
+#kbd .kb-side { fill: #1d2430; }
+body[data-desk="dark"] #kbd .kb-side { fill: #0d1119; }
 #kbd .kb-case { fill: #2b3140; }
 #kbd .kb-plate { fill: #3a4152; }
 #kbd .key .side { fill: #a9b2c5; }
@@ -81,9 +83,11 @@ body[data-desk="dark"] #kbd .key .cap { fill: #39415a; }
 body[data-desk="dark"] #kbd .key text { fill: #dfe6f5; }
 
 /* 鼠标位置与 pet.js 的 layout.mouseSide 对应：反向（默认）在右，正向在左（用户视角） */
-#deskmouse { left: 333px; top: 338px; transform: rotate(calc(-12deg + var(--mouse-turn, 0deg))); transform-origin: 50% 60%; }
+#deskmouse { left: 322px; top: 338px; transform: rotate(calc(-12deg + var(--mouse-turn, 0deg))); transform-origin: 50% 60%; }
 body[data-kb-dir="forward"] #deskmouse { left: 4px; }
 #deskmouse .m-body { fill: #fbfcff; stroke: #3a4152; stroke-width: 2; }
+#deskmouse .m-side { fill: #d5dcec; }
+body[data-desk="dark"] #deskmouse .m-side { fill: #151a24; }
 #deskmouse .m-split { fill: none; stroke: #c3cbdb; stroke-width: 1.5; stroke-linecap: round; }
 #mouseWheel { fill: #5b96ff; stroke: #3a4152; stroke-width: 1.2; transform-box: fill-box; transform-origin: 50% 50%; }
 #deskmouse .m-btn {

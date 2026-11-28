@@ -134,13 +134,13 @@ ${eye(57)}${eye(103)}
   // 固定五排键盘（还原为最初的画法）；小键盘数字、F 键、方向键等不画的键由
   // keys.js 的 fallbackAnchor 兜底到主键区对应位置，爪子照常落键。
   function keyboardSvg(isMac) {
-    const U = 19.4;
+    const U = 17.6;
     const GAP = 1.7;
-    const H = 17.7;
+    const H = 16;
     let keys = '';
     ROWS.forEach((row, r) => {
       let x = 5;
-      const y = 5 + r * U;
+      const y = 4 + r * U;
       row.forEach(([name, units]) => {
         const w = units * U - GAP;
         const cls = name === 'space' ? ' key soft' : MODIFIERS.has(name) ? ' key accent' : ' key';
@@ -155,9 +155,10 @@ ${eye(57)}${eye(103)}
       });
     });
     return `
-<rect class="sil" x="1" y="1" width="298" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="1"/>
-<rect class="kb-case" x="1" y="1" width="298" height="108" rx="11"/>
-<rect class="kb-plate" x="3.6" y="3.6" width="292.8" height="102.8" rx="8"/>${keys}`;
+<rect class="sil" x="1" y="1" width="273" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="1"/>
+<rect class="kb-side" x="1" y="8" width="273" height="100" rx="11"/>
+<rect class="kb-case" x="1" y="1" width="273" height="97" rx="11"/>
+<rect class="kb-plate" x="3.6" y="3.6" width="266.8" height="91.2" rx="8"/>${keys}`;
   }
 
   return { torsoMarkup, pawMarkup, cartoonHeadMarkup, keyboardSvg, tailPathD };

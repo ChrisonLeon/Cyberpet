@@ -1,15 +1,15 @@
 {
-  "version": "2.7.1",
-  "notes": "贴纸白边粗细可自定义（0–4px 滑块）；猫身微调稍胖并修复胳膊悬空",
+  "version": "2.7.2",
+  "notes": "键盘鼠标 2.5D 立体效果（底座厚度）；键盘外壳收窄贴合按键；鼠标左移收拢右侧间隙",
   "urls": {
     "darwin-arm64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.1/BaiXiaoChunPet-2.7.1-mac-arm64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.2/BaiXiaoChunPet-2.7.2-mac-arm64.zip"
     ],
     "darwin-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.1/BaiXiaoChunPet-2.7.1-mac-x64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.2/BaiXiaoChunPet-2.7.2-mac-x64.zip"
     ],
     "win32-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.1/Cyberpet-2.7.1-setup.exe"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.7.2/Cyberpet-2.7.2-setup.exe"
     ]
   }
 }
