@@ -1,15 +1,15 @@
 {
-  "version": "2.6.2",
-  "notes": "四种猫身改瘦更接近真猫体态、贴纸白边再减半、暴躁触发间隔改为 5 秒",
+  "version": "2.6.3",
+  "notes": "修复 App Nap 导致的全系统鼠标键盘卡死（防挂起常驻）；托盘新增键鼠监听应急开关",
   "urls": {
     "darwin-arm64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.2/BaiXiaoChunPet-2.6.2-mac-arm64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.3/BaiXiaoChunPet-2.6.3-mac-arm64.zip"
     ],
     "darwin-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.2/BaiXiaoChunPet-2.6.2-mac-x64.zip"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.3/BaiXiaoChunPet-2.6.3-mac-x64.zip"
     ],
     "win32-x64": [
-      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.2/Cyberpet-2.6.2-setup.exe"
+      "https://github.com/ChrisonLeon/Cyberpet/releases/download/v2.6.3/Cyberpet-2.6.3-setup.exe"
     ]
   }
 }

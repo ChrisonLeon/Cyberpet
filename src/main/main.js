@@ -1,6 +1,6 @@
 'use strict';
 const {
-  app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell, dialog, clipboard, systemPreferences, net,
+  app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell, dialog, clipboard, systemPreferences, net, powerSaveBlocker,
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -300,6 +300,7 @@ function buildTrayMenu() {
     { label: '🔥 能别放屁吗!', click: () => sendAction('angry') },
     { type: 'separator' },
     { label: '窗口置顶', type: 'checkbox', checked: settings.alwaysOnTop, click: (item) => setSettings({ alwaysOnTop: item.checked }) },
+    { label: '键鼠监听', type: 'checkbox', checked: settings.hookOn !== false, click: (item) => setSettings({ hookOn: item.checked }) },
     ...(app.isPackaged ? [{
       label: '开机自动启动',
       type: 'checkbox',
@@ -393,9 +394,21 @@ function broadcast(channel, data, exceptSender) {
   }
 }
 
+// 键鼠监听总开关（托盘）：关掉后不再监听全局键鼠事件，可作为输入卡死的应急出口
+function applyHookOn() {
+  if (!hook) return;
+  if (settings.hookOn === false) {
+    if (hook.running) hook.stop();
+  } else if (!hook.running && hook.state !== 'unavailable'
+    && (!IS_MAC || systemPreferences.isTrustedAccessibilityClient(false))) {
+    hook.start();
+  }
+}
+
 function setSettings(patch, source) {
   settings = store.set(patch);
   if (privacyCtl && patch && typeof patch.privacy === 'boolean') privacyCtl.setEnabled(patch.privacy);
+  if (patch && typeof patch.hookOn === 'boolean') applyHookOn();
   applyWindowSettings();
   broadcast('settings', payload(), source);
   return payload();
@@ -449,7 +462,7 @@ function onInputEvent(ev) {
 
 // macOS 授权后不用重启：钩子没起来时定期看一眼权限，有了就重新启动
 function watchHook() {
-  if (hook.state !== 'live') {
+  if (settings.hookOn !== false && hook.state !== 'live') {
     const trusted = !IS_MAC || systemPreferences.isTrustedAccessibilityClient(false);
     // 未授权时不空转；unavailable 说明组件缺失，重试也不会成功，等「重新检测」按钮
     if (trusted && hook.state !== 'unavailable') hook.start();
@@ -693,7 +706,11 @@ async function boot() {
   registerIpc();
   screen.on('display-removed', ensureOnScreen);
   screen.on('display-metrics-changed', ensureOnScreen);
-  hook.start();
+  // 防 App Nap：本 App 永远不抢焦点，系统会把进程当后台应用挂起；进程挂起时
+  // 会话级全局键鼠钩子跟着停摆，全系统的鼠标键盘事件会被堵死（退出应用才恢复）。
+  // prevent-app-suspension 让进程常驻不挂起，钩子才能持续放行事件。
+  powerSaveBlocker.start('prevent-app-suspension');
+  if (settings.hookOn !== false) hook.start();
   requestAccessibility();
   watchHook();
 
