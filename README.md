@@ -1,13 +1,14 @@
-# Cyberpet · 白小纯头身分离桌宠
+# Cyberpet · 头身分离桌宠
 
-一只趴在键盘上陪你打字的小黑猫，顶着一颗真人抠出来的白小纯脑袋。头和身子是分开的，脑袋会自己一晃一晃。
-Windows / macOS 通用，参考抖音上流行的「头身分离桌宠」做的白小纯版。
+一只趴在键盘上陪你打字的小猫，头和身子是分开的，脑袋会自己一晃一晃。
+默认顶着 Q 版猫头，也可以换成自定义图片 / 动态图头像（项目最早用的白小纯头图仍作为照片模式的兜底头图保留）。
+Windows / macOS 通用。
 
-| 待机（透明背景） | 触发「能别放屁吗!」 | 视频头像（循环播放） |
+| 待机 | 触发「能别放屁吗!」 | 换身 / 换装等玩法 |
 | --- | --- | --- |
-| ![待机](docs/screenshot-idle.png) | ![冒火](docs/screenshot-angry.png) | ![视频头像](docs/screenshot-video.png) |
+| ![待机](docs/screenshot-idle.png) | ![冒火](docs/screenshot-angry.png) | ![玩法](docs/screenshot-video.png) |
 
-身子有 5 种：小黑猫 / 蓝白猫 / 卫衣人偶 / **橘猫 / 奶黄猫**。动作不是死的：姿态由不同频率的弹簧驱动
+身子有 4 种：小黑猫（默认）/ 蓝白猫 / **橘猫 / 奶黄猫**（卫衣人偶身已移除）。动作不是死的：姿态由不同频率的弹簧驱动
 （头、脊柱、挤压、尾根、尾尖互不同步），敲键盘、生气、被摸时会「踢」一下尾巴；发呆几秒还会随机歪头、
 张望、抖耳朵、伸懒腰、挪窝（这套思路借鉴了 [KuroCat](https://github.com/qianyiai/KuroCat)，代码是自己的实现）。
 面板里除了头的大小，还有**整个桌宠的大小**滑块（60%–150%，右下角保持不动）。
@@ -19,7 +20,7 @@ Windows / macOS 通用，参考抖音上流行的「头身分离桌宠」做的�
 | 直接敲键盘（任何 App 里都算） | 猫爪跟着敲，弹出按键气泡，键盘上对应的键会亮，播放键盘音效 |
 | 敲得飞快 | 嫌你吵，触发「能别放屁吗!」 |
 | 移动鼠标 / 滚轮 | 伸出爪子去抓旁边的鼠标 |
-| 敲一下脑袋 | 逐渐暴躁、狂敲键盘；台词开关打开时显示「能别放屁吗!」，导入了配音/原声还会出声 |
+| 敲一下脑袋 | 逐渐暴躁、狂敲键盘；台词开关打开时显示「能别放屁吗!」，导入了配音还会出声 |
 | 按住脑袋滑动 | 摸头：脑袋跟着手歪，冒爱心，呼噜声 |
 | 拖动身子 / 键盘 / 桌垫 | 挪位置（会记住） |
 
@@ -31,7 +32,9 @@ Windows / macOS 通用，参考抖音上流行的「头身分离桌宠」做的�
 - **扩展键兜底**：小键盘数字、F 键、方向键等键盘图上没有的键，爪子自动落到主键区对应/就近的位置，左右爪按基准键分工
 - **鼠标左右键反馈**：按住左键 / 右键时鼠标对应半边会持续高亮下压，松开恢复
 - **台词开关「能别放屁吗」**：独立可选中 / 取消的按钮（默认关）；开着时敲脑袋显示台词，两种状态都会逐渐暴躁狂敲键盘
-- **头大小**、**贴纸白边**、**按键气泡**、**键盘音效**
+- **头大小**、**贴纸白边**（粗细 0–4px 可调）、**按键气泡**、**键盘音效**
+- **手动更新**：面板「支持 → 检查更新」，应用内下载（Gitee 源优先 / GitHub 兜底），mac 自动替换重启、Windows 静默安装；设置 / 头像 / 配音自动保留
+- **托盘应急开关**：菜单栏托盘菜单里有「键鼠监听」开关，输入异常时可一键关闭监听而无需退出应用
 - **轴体音效**：麻将音 / 青轴 / 木鱼 / 奶猫爪（全部实时合成，不带音频文件）；另有**音效总开关**和**音量**滑块（控制键盘音、生气、喵、呼噜等合成音；导入配音不受它影响）
 - **桌面**：**蓝白桌面（默认）** / 透明（只有键盘和鼠标） / 暗夜桌面 / 无道具
 - **自动隐私保护**：见下方「隐私」一节
@@ -39,18 +42,18 @@ Windows / macOS 通用，参考抖音上流行的「头身分离桌宠」做的�
 
 ## 安装
 
-成品在 `dist/`（构建产物），同一版本 7 个安装包，按需选：
+最新安装包在 GitHub [Releases](https://github.com/ChrisonLeon/Cyberpet/releases/latest)（同一版本 7 个文件，`X.Y.Z` 换成实际版本号）：
 
 | 文件 | 适合 |
 | --- | --- |
-| `BaiXiaoChunPet-2.0.0-mac-arm64.dmg` | Apple 芯片 Mac（推荐，双击挂载后拖进应用程序；从安装包启动时会先提示移入「应用程序」） |
-| `BaiXiaoChunPet-2.0.0-mac-arm64.zip` | Apple 芯片 Mac，解压即用 |
-| `BaiXiaoChunPet-2.0.0-mac-x64.dmg` / `.zip` | Intel 芯片的 Mac（自动隐私探测器的 Intel 版尚未随包提供，开启保护会保守遮蔽并提示） |
-| `Cyberpet-2.0.0-setup.exe` | Windows 10 / 11，标准安装器（可自选目录、带卸载） |
-| `Cyberpet-2.0.0-portable.exe` | Windows 免安装：单个文件，双击就跑，不写注册表 |
-| `BaiXiaoChunPet-2.0.0-win-x64.zip` | Windows，解压出文件夹直接运行里面的 exe |
+| `BaiXiaoChunPet-X.Y.Z-mac-arm64.dmg` | Apple 芯片 Mac（推荐，双击挂载后拖进应用程序；从安装包启动时会先提示移入「应用程序」） |
+| `BaiXiaoChunPet-X.Y.Z-mac-arm64.zip` | Apple 芯片 Mac，解压即用 |
+| `BaiXiaoChunPet-X.Y.Z-mac-x64.dmg` / `.zip` | Intel 芯片的 Mac（自动隐私探测器的 Intel 版尚未随包提供，开启保护会保守遮蔽并提示） |
+| `Cyberpet-X.Y.Z-setup.exe` | Windows 10 / 11，标准安装器（可自选目录、带卸载） |
+| `Cyberpet-X.Y.Z-portable.exe` | Windows 免安装：单个文件，双击就跑，不写注册表 |
+| `BaiXiaoChunPet-X.Y.Z-win-x64.zip` | Windows，解压出文件夹直接运行里面的 exe |
 
-体积说明：基于 Electron，安装后约 660MB、运行内存约 150–300MB；程序完全离线，不联网、无遥测。
+体积说明：基于 Electron，安装后约 660MB、运行内存约 150–300MB。平时完全离线、无遥测；仅当你手动点「检查更新 / 下载更新」时才会访问 Gitee / GitHub。
 
 ## 源码仓库
 
@@ -74,39 +77,27 @@ Windows / macOS 通用，参考抖音上流行的「头身分离桌宠」做的�
 
 ### Windows
 
-1. 双击 `Cyberpet-1.3.1-setup.exe` 安装（免安装场景直接双击 `...portable.exe` 或用 zip 版）。
+1. 双击 `Cyberpet-X.Y.Z-setup.exe` 安装（免安装场景直接双击 `...portable.exe` 或用 zip 版）。
 2. 不需要任何系统权限。SmartScreen 可能提示「Windows 已保护你的电脑」→「更多信息」→「仍要运行」（没有代码签名证书的通病）。
 
-> Windows 版 v1.3.2 修复了一个真机问题：打包时混入了 mac 编译的键鼠组件，会导致面板提示
-> 「当前环境没有可用的键鼠监听组件」——**请用 v1.3.2 及以后的安装包**。如果仍提示这句，面板横幅会
-> 显示具体的加载错误，把那段文字发给站长即可定位。推送代码到 GitHub 后，Actions 会在
-> macOS / Windows / Ubuntu 上自动跑单元测试和冒烟测试（`.github/workflows/ci.yml`）。
+> 历史注记：Windows 版 v1.3.2 修复过「打包混入 mac 编译的键鼠组件」的问题；如果面板提示
+> 「当前环境没有可用的键鼠监听组件」，横幅会显示具体的加载错误，按提示处理即可。
 
-## 提取素材（头像帧 / 配音）
+## 素材提取工具（开发者用）
 
-`未命名文件夹` 里放了 5 段视频，用 `tools/extract.swift`（AVFoundation）一次性提取到 `未命名文件夹/提取库/`：
-**头像帧/** 67 张（每段视频每 2 秒一帧，挑顺眼的当图片头像）、**配音/** 23 段 m4a（每 10 秒一段，挑「能别放屁吗」等片段导入配音）。
-这三个目录已经预填到面板「素材」一行；以后往文件夹里加新视频，重新跑一次工具即可：
-
-```bash
-cd tools && swiftc -O -o extract extract.swift
-./extract "/Users/chrison/Desktop/未命名文件夹" "/Users/chrison/Desktop/未命名文件夹/提取库" 2 10
-```
-
-更完整的提取（透明底静态抠头 / 透明底动态抠头 / 2–3 秒头部特写视频 / 按语音分段、文件名带字幕的配音）
-用 `tools/media-pipeline.swift`，提取库就是这么生成的。字幕识别不准的片段在 `提取库/说明表.json` 里人工校对过：
+项目的头像素材与配音来自原始视频，用 `tools/media-pipeline.swift`（AVFoundation）提取
+（透明底抠头、按语音分段并带字幕文件名的配音），面板里再「选图片 / 导入配音」即可使用：
 
 ```bash
 cd tools && swiftc -O -o media-pipeline media-pipeline.swift
-./media-pipeline "/Users/chrison/Desktop/未命名文件夹" "/Users/chrison/Desktop/未命名文件夹/提取库" \
-  --table "/Users/chrison/Desktop/未命名文件夹/提取库/说明表.json"
+./media-pipeline <视频目录> <输出目录> --table <字幕校对表.json>
 ```
 
 测试与质量保障：
 
 ```bash
 npm test           # 单元测试（按键标签、配音联动、设置校验、导入清理、素材）
-npm run smoke      # 冒烟测试：真实启动跑 33 步 67 项断言并截图到 .smoke/
+npm run smoke      # 冒烟测试：真实启动跑 30+ 步 100+ 项断言并截图到 .smoke/
 BXC_PET_PLATFORM=win32 npm run smoke   # 把展示逻辑模拟成 Windows 再跑一遍
 ```
 
@@ -114,7 +105,7 @@ BXC_PET_PLATFORM=win32 npm run smoke   # 把展示逻辑模拟成 Windows 再跑
 
 ## 换配音
 
-面板「更多」一行 →「导入配音」，从音频目录选一段 mp3 / m4a / wav。
+面板「配音」一行 →「导入配音」，从音频目录选一段 mp3 / m4a / wav。
 导入后，敲脑袋或打字太猛时会播放它；不导入则用合成的低吼声代替。
 
 ## 隐私
@@ -166,21 +157,22 @@ npm run dist:win   # 打包 Windows 安装包（在 Mac 上也能直接打）
 
 ### 实现要点
 
-- **全局键鼠**：`uiohook-napi`（自带 Win / macOS / Linux 预编译包）。macOS 上它走 `AXIsProcessTrustedWithOptions`，
-  所以要的是「辅助功能」权限而不是「输入监控」。
+- **全局键鼠**：macOS 用自研助手 `native/macos/input-hook.swift` 编译的独立进程做**被动监听**
+  （listen-only 事件钩子，无权修改或吞掉事件，从机制上杜绝钩子拖死系统输入）；
+  Windows 与 Intel Mac 兜底仍用 `uiohook-napi`。都需要「辅助功能」权限。
 - **不抢焦点**：桌宠窗口是不可聚焦的面板，点它不会把你正在打字的 App 顶掉。
 - **点击穿透**：透明区域 `setIgnoreMouseEvents(true, { forward: true })` 让鼠标落到桌面，
   渲染层用 `elementFromPoint` 判断指针是否落在实体上，动态切换。
-- **贴纸白边**：照片头用「压成白色剪影 + 一串 drop-shadow」的 CSS 滤镜实现，矢量部分画两层（白色底层 + 彩色层）。
+- **贴纸白边**：照片头用「压成白色剪影 + 一串 drop-shadow」的 CSS 滤镜实现，矢量部分画两层（白色底层 + 彩色层）；粗细由 `--sticker-w` 变量统一驱动，面板滑块可调（0–4px）。
 - **省电**：没有动静时降到约 30 帧，有输入立刻回到 60 帧。
 
 ### 换头图
 
-内置头图在 `assets/heads/bxc-default.png`。想换成别的照片，用 `tools/headcut.swift` 抠：
+内置的兜底照片头图在 `assets/heads/default-head.png`（仅照片模式使用；默认头像是 Q 版猫头）。想生成自己的抠头照片，用 `tools/headcut.swift` 抠：
 
 ```bash
 cd tools && swiftc -O -o headcut headcut.swift
-./headcut 输入.jpg ../assets/heads/bxc-default.png 2600 677 0.5 0.08 1.1 2.4 1 0.12
+./headcut 输入.jpg 输出.png 2600 677 0.5 0.08 1.1 2.4 1 0.12
 ```
 
 参数依次是：最长边、输出高度、脖子半宽（按脸宽的比例）、下巴以下保留、两侧斜率、最大半宽、去毛边像素、下颌弧度。
@@ -188,7 +180,7 @@ cd tools && swiftc -O -o headcut headcut.swift
 
 ## 作者信息
 
-默认不显示。要展示的话，把 `src/main/main.js` 顶部 `AUTHOR` 常量里的 `show` 改成 `true`：
+作者信息显示在控制面板底部「支持」一行（`src/main/main.js` 顶部 `AUTHOR` 常量的 `show` 设为 `true`，当前已开启）：
 
 ```js
 const AUTHOR = {
@@ -223,7 +215,7 @@ const AUTHOR = {
 客户端「支持 → 检查更新」读取仓库根目录的 `latest.json`（优先 Gitee raw，GitHub raw 兜底）。发布流程：
 
 1. `package.json` 升版本 → `npm run dist:mac` / `npm run dist:win`（记得带 npmmirror 环境变量）
-2. 在 GitHub Releases 上传 `dist/` 里的 zip（mac）与 setup.exe/portable（win），Release 标签格式 `v2.5.0`
+2. 在 GitHub Releases 上传 `dist/` 里的 zip（mac）与 setup.exe/portable（win），Release 标签格式 `vX.Y.Z`
 3. 更新仓库根目录 `latest.json`（version / notes / urls 指向新资产），提交并推送 GitHub
 4. Gitee 镜像同步后，已装客户端「检查更新」即可发现新版
 5. 若在 Gitee 也发布了 Release 并上传资产，可把 Gitee 直链加到对应 `urls` 数组最前面，国内下载更快
