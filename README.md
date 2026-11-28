@@ -6,7 +6,7 @@ Windows / macOS 通用。
 
 | 待机 | 触发「能别放屁吗!」 | 换身 / 换装等玩法 |
 | --- | --- | --- |
-| ![待机](docs/screenshot-idle.png) | ![冒火](docs/screenshot-angry.png) | ![玩法](docs/screenshot-video.png) |
+| ![待机](docs/screenshot-idle.png) | ![冒火](docs/screenshot-angry.png) | ![换装](docs/screenshot-variants.png) |
 
 身子有 4 种：小黑猫（默认）/ 蓝白猫 / **橘猫 / 奶黄猫**（卫衣人偶身已移除）。动作不是死的：姿态由不同频率的弹簧驱动
 （头、脊柱、挤压、尾根、尾尖互不同步），敲键盘、生气、被摸时会「踢」一下尾巴；发呆几秒还会随机歪头、

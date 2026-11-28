@@ -126,6 +126,8 @@ async function runSelfTest(ctx) {
     log(`面板自然高度（无授权横幅）${pl.header + pl.content - pl.permH + pl.footer}px`);
     await shot('01-panel', panel);
     await js(pet, "document.documentElement.style.background = 'linear-gradient(135deg, #d5e0f2, #8ea3c6)'; 1"); // 后续截图垫一层底色
+    await sleep(150); // 等底色渲染一帧
+    await shot('01-idle-bg'); // README 用：带底色的当前待机造型
   });
 
   await step('hit-test', async () => { // 透明区域点击穿透，画了东西的地方可以交互
