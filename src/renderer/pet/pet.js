@@ -376,8 +376,8 @@
     if (ev.mod) return; // 修饰键也算按了一下，但不计入「敲得太快」
     st.combo.push(now);
     while (st.combo.length && st.combo[0] < now - 2.2) st.combo.shift();
-    // 敲得太猛也会被嫌弃
-    if (st.combo.length >= 22 && now - st.lastAngerAt > 12) {
+    // 敲得太猛也会被嫌弃（同一波怒气冷却 5 秒）
+    if (st.combo.length >= 22 && now - st.lastAngerAt > 5) {
       st.combo.length = 0;
       angry();
     }

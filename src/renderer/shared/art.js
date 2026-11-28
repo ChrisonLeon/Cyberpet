@@ -6,7 +6,7 @@
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const TORSO_PATH = 'M14 114 C 4 70, 26 18, 80 14 C 134 18, 156 70, 146 114 C 122 122, 38 122, 14 114 Z';
+  const TORSO_PATH = 'M34 114 C 28 76, 46 22, 80 16 C 114 22, 132 76, 126 114 C 104 120, 56 120, 34 114 Z';
   // 尾巴和身子共用 SVG / 贴纸底。两段设计贝塞尔在接点共用竖直切线，始终向上呈 S 形。
   // 所有控制点都在 [16.5,223.5] × [16.5,115.5] 内：凸包性质保证最宽 18 的圆头描边不出界。
   const TAIL_ROOT = [118, 88];
@@ -43,10 +43,10 @@
 
   const BELL = `
 <g id="bell">
-  <circle cx="80" cy="56" r="8.5" fill="url(#bellGrad)"/>
-  <path class="bell-slit" d="M73.5 57 H 86.5"/>
-  <circle cx="80" cy="59.5" r="1.8" fill="#b9800a"/>
-  <circle cx="76.8" cy="52.6" r="2.2" fill="#fffbe6" opacity=".95"/>
+  <circle cx="80" cy="48" r="8.5" fill="url(#bellGrad)"/>
+  <path class="bell-slit" d="M73.5 49 H 86.5"/>
+  <circle cx="80" cy="51.5" r="1.8" fill="#b9800a"/>
+  <circle cx="76.8" cy="44.6" r="2.2" fill="#fffbe6" opacity=".95"/>
 </g>`;
 
   function torsoMarkup(variant) {
@@ -60,20 +60,20 @@
   </radialGradient>
   <clipPath id="torsoClip"><path d="${TORSO_PATH}"/></clipPath>
 </defs>
-<path id="tailSil" class="sil tail-stroke" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+<path id="tailSil" class="sil tail-stroke" fill="none" stroke="#fff" stroke-width="16.5" stroke-linecap="round"/>
 <path id="tailColor" class="tail-stroke" fill="none" stroke="var(--tail)" stroke-width="15" stroke-linecap="round"/>
 <path id="tailTipC" class="tail-stroke" fill="none" stroke="var(--tail-tip)" stroke-width="15" stroke-linecap="round"/>
 <!-- 尾巴画在身子前面一层（SVG 后画的在上）：先尾巴后身子，尾巴从身后探出来，不会压在肚子上 -->
-<g class="sil"><path d="${TORSO_PATH}" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></g>
+<g class="sil"><path d="${TORSO_PATH}" fill="#fff" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></g>
 <path d="${TORSO_PATH}" fill="url(#torsoShade)"/>
 ${['bluewhite', 'orange', 'cream'].includes(variant) ? `<g clip-path="url(#torsoClip)" fill="var(--patch)">
-  <path d="M14 114 C 4 70, 26 18, 80 14 C 76 46, 68 74, 64 120 L 14 114 Z"/>
-  <path d="M96 15 C 124 20, 146 46, 152 80 C 132 66, 108 46, 96 15 Z"/>
+  <path d="M32 114 C 26 74, 42 20, 80 16 C 78 42, 73 70, 71 118 L 32 114 Z"/>
+  <path d="M92 17 C 112 22, 126 44, 132 74 C 118 62, 100 46, 92 17 Z"/>
 </g>` : ''}
-<path class="string" d="M58 44 q -3 8 -2 14"/><path class="string" d="M102 44 q 3 8 2 14"/>
-<circle class="aglet" cx="56" cy="59" r="1.8"/><circle class="aglet" cx="104" cy="59" r="1.8"/>
-<path class="collar" d="M44 36 Q 80 60 116 36"/>
-<path class="collar-hi" d="M48 37 Q 80 56 112 37"/>
+<path class="string" d="M62 36 q -3 8 -2 13"/><path class="string" d="M98 36 q 3 8 2 13"/>
+<circle class="aglet" cx="60" cy="50" r="1.8"/><circle class="aglet" cx="100" cy="50" r="1.8"/>
+<path class="collar" d="M58 30 Q 80 52 102 30"/>
+<path class="collar-hi" d="M62 31 Q 80 48 98 31"/>
 ${BELL}`;
   }
 
@@ -96,9 +96,9 @@ ${BELL}`;
 </g>`;
     return `
 <g class="sil">
-  <path d="M34 58 L 25 10 Q 24 2 31 6 L 70 30 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M126 58 L 135 10 Q 136 2 129 6 L 90 30 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-  <circle cx="80" cy="94" r="60" fill="#fff" stroke="#fff" stroke-width="2"/>
+  <path d="M34 58 L 25 10 Q 24 2 31 6 L 70 30 Z" fill="#fff" stroke="#fff" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M126 58 L 135 10 Q 136 2 129 6 L 90 30 Z" fill="#fff" stroke="#fff" stroke-width="1" stroke-linejoin="round"/>
+  <circle cx="80" cy="94" r="60" fill="#fff" stroke="#fff" stroke-width="1"/>
 </g>
 <path class="ear" d="M34 58 L 25 10 Q 24 2 31 6 L 70 30 Z"/>
 <path class="ear" d="M126 58 L 135 10 Q 136 2 129 6 L 90 30 Z"/>
@@ -155,7 +155,7 @@ ${eye(57)}${eye(103)}
       });
     });
     return `
-<rect class="sil" x="1" y="1" width="298" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="2"/>
+<rect class="sil" x="1" y="1" width="298" height="108" rx="11" fill="#fff" stroke="#fff" stroke-width="1"/>
 <rect class="kb-case" x="1" y="1" width="298" height="108" rx="11"/>
 <rect class="kb-plate" x="3.6" y="3.6" width="292.8" height="102.8" rx="8"/>${keys}`;
   }
